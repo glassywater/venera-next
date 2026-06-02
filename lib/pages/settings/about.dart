@@ -58,6 +58,13 @@ class _AboutSettingsState extends State<AboutSettings> {
             },
           ).fixHeight(32),
         ).toSliver(),
+        ListTile(
+          title: Text("Changelog".tl),
+          trailing: const Icon(Icons.keyboard_arrow_right),
+          onTap: () {
+            context.to(() => const ChangelogPage());
+          },
+        ).toSliver(),
         _SwitchSetting(
           title: "Check for updates on startup".tl,
           settingKey: "checkUpdateOnStart",
@@ -70,6 +77,49 @@ class _AboutSettingsState extends State<AboutSettings> {
           },
         ).toSliver(),
       ],
+    );
+  }
+}
+
+class ChangelogPage extends StatefulWidget {
+  const ChangelogPage({super.key});
+
+  @override
+  State<ChangelogPage> createState() => _ChangelogPageState();
+}
+
+class _ChangelogPageState extends State<ChangelogPage> {
+  late final Future<String> _changelog = rootBundle.loadString("CHANGELOG.md");
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      child: SmoothCustomScrollView(
+        slivers: [
+          SliverAppbar(title: Text("Changelog".tl)),
+          FutureBuilder(
+            future: _changelog,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text("Error".tl)),
+                );
+              }
+              if (!snapshot.hasData) {
+                return const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return SelectableText(
+                snapshot.data!,
+                style: const TextStyle(fontFamily: "monospace"),
+              ).paddingAll(16).toSliver();
+            },
+          ),
+        ],
+      ),
     );
   }
 }
