@@ -45,7 +45,7 @@ def update_json_file_release(json_file, latest_release):
         return
 
     try:
-        with open(json_file, "r") as file:
+        with open(json_file, "r", encoding="utf-8-sig") as file:
             data = json.load(file)
     except json.JSONDecodeError as e:
         print(f"Error reading JSON file: {e}")
@@ -119,7 +119,7 @@ def update_json_file_release(json_file, latest_release):
         "notify": True,
         "tintColor": "#0784FC",
         "title": f"{full_version} - Venera  {date_string}",
-        "url": f"https://github.com/venera-app/venera/releases/tag/{tag}"
+        "url": f"https://github.com/CyrilPeng/venera-next/releases/tag/{tag}"
     }
 
     news_entry_exists = any(item["identifier"] == news_identifier for item in data["news"])
@@ -127,7 +127,7 @@ def update_json_file_release(json_file, latest_release):
         data["news"].append(news_entry)
 
     try:
-        with open(json_file, "w") as file:
+        with open(json_file, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=2)
         print("JSON file updated successfully.")
     except IOError as e:
@@ -135,7 +135,7 @@ def update_json_file_release(json_file, latest_release):
         raise
 
 def main():
-    repo_url = "venera-app/venera"
+    repo_url = "CyrilPeng/venera-next"
     is_nightly = "NIGHTLY_LINK" in os.environ
 
     try:
