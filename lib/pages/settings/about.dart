@@ -1,4 +1,4 @@
-﻿part of 'settings_page.dart';
+part of 'settings_page.dart';
 
 class AboutSettings extends StatefulWidget {
   const AboutSettings({super.key});
@@ -36,10 +36,7 @@ class _AboutSettingsState extends State<AboutSettings> {
         Column(
           children: [
             const SizedBox(height: 8),
-            Text(
-              "V${App.version}",
-              style: const TextStyle(fontSize: 16),
-            ),
+            Text("V${App.version}", style: const TextStyle(fontSize: 16)),
             Text("Venera is a free and open-source app for comic reading.".tl),
             const SizedBox(height: 8),
           ],
@@ -85,46 +82,54 @@ class _AboutSettingsState extends State<AboutSettings> {
 }
 
 Future<bool> checkUpdate() async {
-  var res = await AppDio()
-      .get("https://cdn.jsdelivr.net/gh/CyrilPeng/venera-next@main/pubspec.yaml");
+  var res = await AppDio().get(
+    "https://raw.githubusercontent.com/CyrilPeng/venera-next/main/pubspec.yaml",
+  );
   if (res.statusCode == 200) {
     var data = loadYaml(res.data);
     if (data["version"] != null) {
-      return _compareVersion(data["version"].split("+")[0], App.version);
+      var remoteVersion = data["version"].toString().split('+').first;
+      return _compareVersion(remoteVersion, App.version);
     }
   }
   return false;
 }
 
-Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = false]) async {
+Future<void> checkUpdateUi([
+  bool showMessageIfNoUpdate = true,
+  bool delay = false,
+]) async {
   try {
     var value = await checkUpdate();
     if (value) {
       if (delay) {
         await Future.delayed(const Duration(seconds: 2));
       }
+      if (!App.rootContext.mounted) return;
       showDialog(
-          context: App.rootContext,
-          builder: (context) {
-            return ContentDialog(
-              title: "New version available".tl,
-              content: Text(
-                      "A new version is available. Do you want to update now?"
-                          .tl)
-                  .paddingHorizontal(16),
-              actions: [
-                Button.text(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    launchUrlString(
-                        "https://github.com/CyrilPeng/venera-next/releases");
-                  },
-                  child: Text("Update".tl),
-                ),
-              ],
-            );
-          });
+        context: App.rootContext,
+        builder: (context) {
+          return ContentDialog(
+            title: "New version available".tl,
+            content: Text(
+              "A new version is available. Do you want to update now?".tl,
+            ).paddingHorizontal(16),
+            actions: [
+              Button.text(
+                onPressed: () {
+                  Navigator.pop(context);
+                  launchUrlString(
+                    "https://github.com/CyrilPeng/venera-next/releases",
+                  );
+                },
+                child: Text("Update".tl),
+              ),
+            ],
+          );
+        },
+      );
     } else if (showMessageIfNoUpdate) {
+      if (!App.rootContext.mounted) return;
       App.rootContext.showMessage(message: "No new version available".tl);
     }
   } catch (e, s) {
@@ -134,15 +139,14 @@ Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true, bool delay = fals
 
 /// return true if version1 > version2
 bool _compareVersion(String version1, String version2) {
-  var v1 = version1.split(".");
-  var v2 = version2.split(".");
-  for (var i = 0; i < v1.length; i++) {
-    if (int.parse(v1[i]) > int.parse(v2[i])) {
-      return true;
-    }
-    if (int.parse(v1[i]) < int.parse(v2[i])) {
-      return false;
-    }
+  var v1 = version1.split('+').first.split('-').first.split(".");
+  var v2 = version2.split('+').first.split('-').first.split(".");
+  final length = v1.length > v2.length ? v1.length : v2.length;
+  for (var i = 0; i < length; i++) {
+    var n1 = i < v1.length ? int.tryParse(v1[i]) ?? 0 : 0;
+    var n2 = i < v2.length ? int.tryParse(v2[i]) ?? 0 : 0;
+    if (n1 > n2) return true;
+    if (n1 < n2) return false;
   }
   return false;
 }
