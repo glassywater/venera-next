@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -27,8 +28,13 @@ class IO {
 class FilePath {
   const FilePath._();
 
-  static String join(String path1, String path2,
-      [String? path3, String? path4, String? path5]) {
+  static String join(
+    String path1,
+    String path2, [
+    String? path3,
+    String? path4,
+    String? path5,
+  ]) {
     return p.join(path1, path2, path3, path4, path5);
   }
 }
@@ -130,6 +136,25 @@ extension DirectoryExtension on Directory {
   }
 }
 
+/// Soft upper bound for the sanitized title portion of a filename, in characters.
+const maxSanitizedFileNameLength = 80;
+
+/// Hard upper bound for an exported filename, in UTF-8 bytes.
+///
+/// APFS (iOS/macOS) caps a single path component at 255 UTF-8 bytes. 230 leaves
+/// a small margin for platform / sync layers that prepend metadata.
+const maxExportFileNameUtf8Bytes = 230;
+
+const _defaultFallback = 'file';
+
+/// Path-illegal characters shared by [sanitizeFileName] and
+/// [sanitizeFileNameWithSuffix].
+final _invalidFileNameChars = RegExp(r'[<>:"/\\|?*]');
+
+/// Replace invalid characters with a space (matches [sanitizeFileName]).
+String _replaceInvalidChars(String value) =>
+    value.replaceAll(_invalidFileNameChars, ' ');
+
 /// Sanitize the file name. Remove invalid characters and trim the file name.
 String sanitizeFileName(String fileName, {String? dir, int? maxLength}) {
   while (fileName.endsWith('.')) {
@@ -142,9 +167,7 @@ String sanitizeFileName(String fileName, {String? dir, int? maxLength}) {
     }
     length -= dir.length;
   }
-  final invalidChars = RegExp(r'[<>:"/\\|?*]');
-  final sanitizedFileName = fileName.replaceAll(invalidChars, ' ');
-  var trimmedFileName = sanitizedFileName.trim();
+  var trimmedFileName = _replaceInvalidChars(fileName).trim();
   if (trimmedFileName.isEmpty) {
     throw Exception('Invalid File Name: Empty length.');
   }
@@ -157,8 +180,88 @@ String sanitizeFileName(String fileName, {String? dir, int? maxLength}) {
   return trimmedFileName;
 }
 
+/// Truncate `value` to fit within `maxBytes` UTF-8 bytes, aligned on Unicode
+/// code points. Byte-faithful: trailing whitespace is preserved.
+///
+/// Note: iteration is by code point (rune), not by grapheme cluster, so NFD
+/// composed forms (e.g. Japanese `し` + `゙` = `じ`) may split at the boundary,
+/// leaving an orphan combining mark. Production input is typically NFC so this
+/// is rare in practice; switch to `package:characters` if strict grapheme
+/// alignment is needed.
+String _truncateUtf8(String value, int maxBytes) {
+  if (maxBytes <= 0) return '';
+  var usedBytes = 0;
+  final buffer = StringBuffer();
+  for (final rune in value.runes) {
+    final char = String.fromCharCode(rune);
+    final charBytes = utf8.encode(char).length;
+    if (usedBytes + charBytes > maxBytes) break;
+    buffer.write(char);
+    usedBytes += charBytes;
+  }
+  return buffer.toString();
+}
+
+/// Build an export filename of the form `{title}{middle}{extension}`.
+///
+/// - Invalid path characters in [middle] and [extension] are replaced with
+///   spaces. The chapter title contained in [middle] is user-controlled data
+///   and may contain `/`, `:`, `*`, etc.
+/// - [extension] is preserved whenever possible: if [middle] + [extension] fits
+///   within [maxUtf8Bytes] the extension is appended verbatim (modulo invalid
+///   chars). If they together overflow [maxUtf8Bytes] the title is dropped and
+///   only [middle] is byte-truncated; [extension] is still appended in full. If
+///   [extension] alone overflows [maxUtf8Bytes] (pathological) it is truncated.
+/// - The title is capped at [maxSanitizedFileNameLength] characters (soft) and
+///   further by the remaining UTF-8 byte budget (hard).
+/// - When the title sanitizes to empty, [fallback] is used; if [fallback] also
+///   sanitizes to empty the literal `'file'` is used. The function never throws.
+String sanitizeFileNameWithSuffix(
+  String fileName, {
+  String middle = '',
+  required String extension,
+  int maxUtf8Bytes = maxExportFileNameUtf8Bytes,
+  String fallback = _defaultFallback,
+}) {
+  final cleanMiddle = _replaceInvalidChars(middle);
+  final cleanExtension = _replaceInvalidChars(extension);
+  final extensionBytes = utf8.encode(cleanExtension).length;
+
+  if (extensionBytes >= maxUtf8Bytes) {
+    return _truncateUtf8(cleanExtension, maxUtf8Bytes);
+  }
+
+  final middleBytes = utf8.encode(cleanMiddle).length;
+  if (middleBytes + extensionBytes >= maxUtf8Bytes) {
+    final middleBudget = maxUtf8Bytes - extensionBytes;
+    return '${_truncateUtf8(cleanMiddle, middleBudget)}$cleanExtension';
+  }
+
+  final titleBudget = maxUtf8Bytes - middleBytes - extensionBytes;
+
+  String trySanitize(String input) {
+    try {
+      return sanitizeFileName(input, maxLength: maxSanitizedFileNameLength);
+    } catch (_) {
+      return '';
+    }
+  }
+
+  var title = _truncateUtf8(trySanitize(fileName), titleBudget).trimRight();
+  if (title.isEmpty) {
+    title = _truncateUtf8(trySanitize(fallback), titleBudget).trimRight();
+  }
+  if (title.isEmpty) {
+    title = _truncateUtf8(_defaultFallback, titleBudget);
+  }
+  return '$title$cleanMiddle$cleanExtension';
+}
+
 /// Copy the **contents** of the source directory to the destination directory.
 Future<void> copyDirectory(Directory source, Directory destination) async {
+  if (!destination.existsSync()) {
+    destination.createSync();
+  }
   List<FileSystemEntity> contents = source.listSync();
   for (FileSystemEntity content in contents) {
     String newPath = FilePath.join(destination.path, content.name);
@@ -179,7 +282,9 @@ Future<void> copyDirectory(Directory source, Directory destination) async {
 /// Copy the **contents** of the source directory to the destination directory.
 /// This function is executed in an isolate to prevent the UI from freezing.
 Future<void> copyDirectoryIsolate(
-    Directory source, Directory destination) async {
+  Directory source,
+  Directory destination,
+) async {
   await Isolate.run(() => overrideIO(() => copyDirectory(source, destination)));
 }
 
@@ -232,8 +337,9 @@ class DirectoryPicker {
         }
       } else {
         // ios, macos
-        directory =
-            await _methodChannel.invokeMethod<String?>("getDirectoryPath");
+        directory = await _methodChannel.invokeMethod<String?>(
+          "getDirectoryPath",
+        );
       }
       if (directory == null) return null;
       _finalizer.attach(this, directory);
@@ -298,6 +404,7 @@ Future<FileSelectResult?> selectFile({required List<String> ext}) async {
       file = FileSelectResult(xFile.path);
     }
     if (!ext.contains(file.path.split(".").last)) {
+      if (!App.rootContext.mounted) return null;
       App.rootContext.showMessage(
         message: "Invalid file type: ${file.path.split(".").last}",
       );
@@ -328,8 +435,12 @@ Future<String?> selectDirectoryIOS() async {
   return IOSDirectoryPicker.selectDirectory();
 }
 
-Future<void> saveFile(
-    {Uint8List? data, required String filename, File? file}) async {
+/// Returns `true` if the file was saved, `false` if the user cancelled.
+Future<bool> saveFile({
+  Uint8List? data,
+  required String filename,
+  File? file,
+}) async {
   if (data == null && file == null) {
     throw Exception("data and file cannot be null at the same time");
   }
@@ -344,8 +455,13 @@ Future<void> saveFile(
       file = File(cache);
     }
     if (App.isMobile) {
-      final params = SaveFileDialogParams(sourceFilePath: file!.path);
-      await FlutterFileDialog.saveFile(params: params);
+      // FIX: iOS export dialog cannot show filename and save.
+      final params = SaveFileDialogParams(
+        sourceFilePath: file!.path,
+        fileName: App.isIOS ? filename : null,
+      );
+      final result = await FlutterFileDialog.saveFile(params: params);
+      return result != null;
     } else {
       final result = await file_selector.getSaveLocation(
         suggestedName: filename,
@@ -353,7 +469,9 @@ Future<void> saveFile(
       if (result != null) {
         var xFile = file_selector.XFile(file!.path);
         await xFile.saveTo(result.path);
+        return true;
       }
+      return false;
     }
   } finally {
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -394,10 +512,7 @@ final class _IOOverrides extends IOOverrides {
 }
 
 T overrideIO<T>(T Function() f) {
-  return IOOverrides.runWithIOOverrides<T>(
-    f,
-    _IOOverrides(),
-  );
+  return IOOverrides.runWithIOOverrides<T>(f, _IOOverrides());
 }
 
 class Share {
@@ -407,20 +522,22 @@ class Share {
     required String mime,
   }) {
     if (!App.isWindows) {
-      s.Share.shareXFiles(
-        [s.XFile.fromData(data, mimeType: mime)],
-        fileNameOverrides: [filename],
+      s.SharePlus.instance.share(
+        s.ShareParams(
+          files: [s.XFile.fromData(data, mimeType: mime)],
+          fileNameOverrides: [filename],
+        ),
       );
     } else {
       // write to cache
       var file = File(FilePath.join(App.cachePath, filename));
       file.writeAsBytesSync(data);
-      s.Share.shareXFiles([s.XFile(file.path)]);
+      s.SharePlus.instance.share(s.ShareParams(files: [s.XFile(file.path)]));
     }
   }
 
   static void shareText(String text) {
-    s.Share.share(text);
+    s.SharePlus.instance.share(s.ShareParams(text: text));
   }
 }
 

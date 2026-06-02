@@ -408,7 +408,10 @@ class ComicBackupManager {
   }
 
   static String backupFileName(LocalComic comic) {
-    final name = sanitizeFileName(comic.title, maxLength: 100);
+    final name = sanitizeFileName(
+      comic.title,
+      maxLength: maxSanitizedFileNameLength,
+    );
     final now = DateTime.now();
     final timestamp =
         '${now.year}-${_twoDigits(now.month)}-${_twoDigits(now.day)}';
