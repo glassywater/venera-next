@@ -15,6 +15,37 @@ import 'package:venera/utils/translations.dart';
 
 import 'io.dart';
 
+class DataSyncStatusSnapshot {
+  const DataSyncStatusSnapshot({
+    required this.isEnabled,
+    required this.isUploading,
+    required this.isDownloading,
+    required this.lastSyncTime,
+    required this.lastError,
+  });
+
+  final bool isEnabled;
+  final bool isUploading;
+  final bool isDownloading;
+  final int lastSyncTime;
+  final String? lastError;
+
+  bool get isSyncing => isUploading || isDownloading;
+
+  bool get shouldShow => isEnabled || isSyncing;
+
+  String get title => isSyncing ? 'Syncing Data' : 'Sync Data';
+
+  String get formattedLastSyncTime => _formatTime(lastSyncTime);
+
+  static String _formatTime(int timestamp) {
+    final time = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${time.year}-${twoDigits(time.month)}-${twoDigits(time.day)} '
+        '${twoDigits(time.hour)}:${twoDigits(time.minute)}';
+  }
+}
+
 class DataSync with ChangeNotifier {
   DataSync._() {
     if (isEnabled) {
@@ -76,6 +107,14 @@ class DataSync with ChangeNotifier {
 
   String? get lastError => _lastError;
 
+  DataSyncStatusSnapshot get statusSnapshot => DataSyncStatusSnapshot(
+    isEnabled: isEnabled,
+    isUploading: _isUploading,
+    isDownloading: _isDownloading,
+    lastSyncTime: (appdata.settings['lastSyncTime'] as int?) ?? 0,
+    lastError: _lastError,
+  );
+
   bool get isEnabled {
     var config = appdata.settings['webdav'];
     var autoSync = appdata.implicitData['webdavAutoSync'] ?? false;
@@ -131,10 +170,10 @@ class DataSync with ChangeNotifier {
         appdata.settings['dataVersion']++;
         await appdata.saveData(false);
         var data = await exportAppData(
-            appdata.settings['disableSyncFields'].toString().isNotEmpty
+          appdata.settings['disableSyncFields'].toString().isNotEmpty,
         );
-        var time =
-            (DateTime.now().millisecondsSinceEpoch ~/ 86400000).toString();
+        var time = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
+            .toString();
         var filename = time;
         filename += '-';
         filename += appdata.settings['dataVersion'].toString();
@@ -151,6 +190,9 @@ class DataSync with ChangeNotifier {
         }
         await client.write(filename, await data.readAsBytes());
         data.deleteIgnoreError();
+        appdata.settings['lastSyncTime'] =
+            DateTime.now().millisecondsSinceEpoch;
+        await appdata.saveData(false);
         Log.info("Upload Data", "Data uploaded successfully");
         return const Res(true);
       } catch (e, s) {
@@ -201,8 +243,11 @@ class DataSync with ChangeNotifier {
         if (file == null) {
           throw 'No data file found';
         }
-        var version =
-            file.name!.split('-').elementAtOrNull(1)?.split('.').first;
+        var version = file.name!
+            .split('-')
+            .elementAtOrNull(1)
+            ?.split('.')
+            .first;
         if (version != null && int.tryParse(version) != null) {
           var currentVersion = appdata.settings['dataVersion'];
           if (currentVersion != null && int.parse(version) <= currentVersion) {
@@ -215,6 +260,9 @@ class DataSync with ChangeNotifier {
         await client.read2File(file.name!, localFile.path);
         await importAppData(localFile, true);
         await localFile.delete();
+        appdata.settings['lastSyncTime'] =
+            DateTime.now().millisecondsSinceEpoch;
+        await appdata.saveData(false);
         Log.info("Data Sync", "Data downloaded successfully");
         return const Res(true);
       } catch (e, s) {

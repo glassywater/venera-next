@@ -473,7 +473,10 @@
     "Remote Path": "远端路径",
     "Archive": "归档",
     "@a archives · @b": "@a 个归档 · @b",
-    "@a archives 路 @b": "@a 个归档 · @b"
+    "@a archives 路 @b": "@a 个归档 · @b",
+    "Last sync failed": "上次同步失败",
+    "Not synced yet": "尚未同步",
+    "Last synced": "上次同步"
   },
   "zh_TW": {
     "Home": "首頁",
@@ -949,6 +952,9 @@
     "Remote Path": "遠端路徑",
     "Archive": "歸檔",
     "@a archives · @b": "@a 個歸檔 · @b",
-    "@a archives 路 @b": "@a 個歸檔 · @b"
+    "@a archives 路 @b": "@a 個歸檔 · @b",
+    "Last sync failed": "上次同步失敗",
+    "Not synced yet": "尚未同步",
+    "Last synced": "上次同步"
   }
 }
