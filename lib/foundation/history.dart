@@ -439,6 +439,11 @@ class HistoryManager with ChangeNotifier {
     _db.dispose();
   }
 
+  void notifyChanges() {
+    updateCache();
+    notifyListeners();
+  }
+
   void batchDeleteHistories(List<ComicID> histories) {
     if (histories.isEmpty) return;
     _db.execute('BEGIN TRANSACTION;');

@@ -5,6 +5,7 @@ import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/comic_source/comic_source.dart';
 import 'package:venera/foundation/favorites.dart';
+import 'package:venera/foundation/history.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/res.dart';
 import 'package:venera/network/app_dio.dart';
@@ -260,6 +261,9 @@ class DataSync with ChangeNotifier {
         await client.read2File(file.name!, localFile.path);
         await importAppData(localFile, true);
         await localFile.delete();
+        HistoryManager().notifyChanges();
+        LocalFavoritesManager().notifyChanges();
+        ImageFavoriteManager().notifyChanges();
         appdata.settings['lastSyncTime'] =
             DateTime.now().millisecondsSinceEpoch;
         await appdata.saveData(false);

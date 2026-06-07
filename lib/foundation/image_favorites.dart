@@ -385,6 +385,10 @@ class ImageFavoriteManager with ChangeNotifier {
     return res.first.values.first! as int;
   }
 
+  void notifyChanges() {
+    notifyListeners();
+  }
+
   List<ImageFavoritesComic> search(String keyword) {
     if (keyword == "") {
       return [];
