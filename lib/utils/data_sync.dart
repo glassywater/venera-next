@@ -232,13 +232,25 @@ class DataSync with ChangeNotifier {
     _lastError = null;
     notifyListeners();
     try {
-      return await run();
+      final result = await run();
+      if (result.error) {
+        _lastError = result.errorMessage;
+      }
+      return result;
+    } catch (e, s) {
+      Log.error(_taskLogTag(task), e, s);
+      _lastError = e.toString();
+      return Res.error(e.toString());
     } finally {
       _activeTaskType = null;
       _isUploading = false;
       _isDownloading = false;
       notifyListeners();
     }
+  }
+
+  String _taskLogTag(_DataSyncTask task) {
+    return task == _DataSyncTask.upload ? 'Upload Data' : 'Data Sync';
   }
 
   Future<Res<bool>> _uploadDataNow() async {
