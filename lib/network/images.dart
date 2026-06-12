@@ -102,7 +102,7 @@ abstract class ImageDownloader {
 
   /// Cancel all loading images.
   static void cancelAllLoadingImages() {
-    for (var wrapper in _loadingImages.values) {
+    for (var wrapper in _loadingImages.values.toList()) {
       wrapper.cancel();
     }
     _loadingImages.clear();
@@ -116,8 +116,10 @@ abstract class ImageDownloader {
     if (_loadingImages.containsKey(cacheKey)) {
       return _loadingImages[cacheKey]!.stream;
     }
+    final debugLoader = debugLoadComicImageUnwrapped;
     final stream = _StreamWrapper<ImageDownloadProgress>(
-      _loadComicImage(imageKey, sourceKey, cid, eid),
+      debugLoader?.call(imageKey, sourceKey, cid, eid) ??
+          _loadComicImage(imageKey, sourceKey, cid, eid),
       (wrapper) {
         _loadingImages.remove(cacheKey);
       },
@@ -264,45 +266,56 @@ abstract class ImageDownloader {
 class _StreamWrapper<T> {
   final Stream<T> _stream;
 
-  final List<StreamController> controllers = [];
+  final List<StreamController<T>> controllers = [];
 
   final void Function(_StreamWrapper<T> wrapper) onClosed;
 
   bool isClosed = false;
 
+  StreamSubscription<T>? _subscription;
+
   _StreamWrapper(this._stream, this.onClosed) {
     _listen();
   }
 
-  void _listen() async {
-    try {
-      await for (var data in _stream) {
+  void _listen() {
+    _subscription = _stream.listen(
+      (data) {
         if (isClosed) {
-          break;
+          return;
         }
         for (var controller in controllers) {
           if (!controller.isClosed) {
             controller.add(data);
           }
         }
-      }
-    }
-    catch (e) {
-      for (var controller in controllers) {
-        if (!controller.isClosed) {
-          controller.addError(e);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (isClosed) {
+          return;
         }
-      }
-    }
-    finally {
-      for (var controller in controllers) {
-        if (!controller.isClosed) {
-          controller.close();
+        for (var controller in controllers) {
+          if (!controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
         }
+      },
+      onDone: _close,
+    );
+  }
+
+  void _close() {
+    if (isClosed) {
+      return;
+    }
+    isClosed = true;
+    for (var controller in controllers) {
+      if (!controller.isClosed) {
+        controller.close();
       }
     }
     controllers.clear();
-    isClosed = true;
+    _subscription = null;
     onClosed(this);
   }
 
@@ -314,16 +327,31 @@ class _StreamWrapper<T> {
     controllers.add(controller);
     controller.onCancel = () {
       controllers.remove(controller);
+      if (controllers.isEmpty) {
+        cancel();
+      }
     };
     return controller.stream;
   }
 
   void cancel() {
+    if (isClosed) {
+      return;
+    }
+    isClosed = true;
     for (var controller in controllers) {
-      controller.close();
+      if (!controller.isClosed) {
+        controller.close();
+      }
     }
     controllers.clear();
-    isClosed = true;
+    final subscription = _subscription;
+    _subscription = null;
+    if (subscription == null) {
+      onClosed(this);
+    } else {
+      unawaited(subscription.cancel().whenComplete(() => onClosed(this)));
+    }
   }
 }
 
