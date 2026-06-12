@@ -137,7 +137,7 @@ class AppDio with DioMixin {
     }
   }
 
-  static final Map<String, bool> _requests = {};
+  static final Map<String, Future<void>> _requestTails = {};
 
   @override
   Future<Response<T>> request<T>(
@@ -149,15 +149,18 @@ class AppDio with DioMixin {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
+    Completer<void>? requestCompleter;
     if (options?.headers?['prevent-parallel'] == 'true') {
-      while (_requests.containsKey(path)) {
-        await Future.delayed(const Duration(milliseconds: 20));
-      }
-      _requests[path] = true;
+      final previousRequest = _requestTails[path];
+      requestCompleter = Completer<void>();
+      _requestTails[path] = requestCompleter.future;
       options!.headers!.remove('prevent-parallel');
+      if (previousRequest != null) {
+        await previousRequest;
+      }
     }
     try {
-      return super.request<T>(
+      return await super.request<T>(
         path,
         data: data,
         queryParameters: queryParameters,
@@ -167,8 +170,11 @@ class AppDio with DioMixin {
         onReceiveProgress: onReceiveProgress,
       );
     } finally {
-      if (_requests.containsKey(path)) {
-        _requests.remove(path);
+      if (requestCompleter != null) {
+        if (identical(_requestTails[path], requestCompleter.future)) {
+          _requestTails.remove(path);
+        }
+        requestCompleter.complete();
       }
     }
   }
