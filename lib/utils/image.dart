@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:lodepng_flutter/lodepng_flutter.dart' as lodepng;
@@ -291,14 +294,15 @@ class JsEngine {
   }
 }
 
-var _tasksCount = 0;
+final _imageScriptSlots = _AsyncSemaphore(4);
+
+@visibleForTesting
+Future<T> debugRunWithImageScriptSlot<T>(Future<T> Function() task) {
+  return _imageScriptSlots.run(task);
+}
 
 Future<Uint8List> modifyImageWithScript(Uint8List data, String script) async {
-  while (_tasksCount > 3) {
-    await Future.delayed(const Duration(milliseconds: 200));
-  }
-  _tasksCount++;
-  try {
+  return _imageScriptSlots.run(() async {
     var image = await Image.decodeImage(data);
     var initJs = await rootBundle.loadString('assets/init.js');
     return await Isolate.run(() {
@@ -318,7 +322,42 @@ Future<Uint8List> modifyImageWithScript(Uint8List data, String script) async {
       var data = newImage!.encodePng();
       return Uint8List.fromList(data);
     });
-  } finally {
-    _tasksCount--;
+  });
+}
+
+class _AsyncSemaphore {
+  final int maxConcurrent;
+
+  int _active = 0;
+
+  final _waiters = Queue<Completer<void>>();
+
+  _AsyncSemaphore(this.maxConcurrent);
+
+  Future<T> run<T>(Future<T> Function() task) async {
+    await _acquire();
+    try {
+      return await task();
+    } finally {
+      _release();
+    }
+  }
+
+  Future<void> _acquire() {
+    if (_active < maxConcurrent) {
+      _active++;
+      return Future.value();
+    }
+    final completer = Completer<void>();
+    _waiters.add(completer);
+    return completer.future;
+  }
+
+  void _release() {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeFirst().complete();
+      return;
+    }
+    _active--;
   }
 }
