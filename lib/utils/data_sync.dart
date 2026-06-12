@@ -88,10 +88,24 @@ class DataSync with ChangeNotifier {
       barrierDismissible: false,
       message: "Uploading data...".tl,
     );
-    while (_isUploading) {
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
+    await _waitForUploadBeforeClose();
     exit(0);
+  }
+
+  Future<void> _waitForUploadBeforeClose() async {
+    while (true) {
+      Future<Res<bool>>? uploadTask;
+      if (_pendingTaskType == _DataSyncTask.upload) {
+        uploadTask = _pendingTask;
+      } else if (_activeTaskType == _DataSyncTask.upload) {
+        uploadTask = _activeTask;
+      }
+      if (uploadTask == null) {
+        return;
+      }
+      await uploadTask;
+      await Future<void>.delayed(Duration.zero);
+    }
   }
 
   static DataSync? instance;
@@ -106,6 +120,11 @@ class DataSync with ChangeNotifier {
 
   @visibleForTesting
   static bool debugDisableWindowCloseHandler = false;
+
+  @visibleForTesting
+  Future<void> debugWaitForUploadBeforeClose() {
+    return _waitForUploadBeforeClose();
+  }
 
   @visibleForTesting
   static void resetForTesting() {
@@ -129,6 +148,8 @@ class DataSync with ChangeNotifier {
   Future<Res<bool>>? _pendingTask;
 
   _DataSyncTask? _activeTaskType;
+
+  _DataSyncTask? _pendingTaskType;
 
   String? _lastError;
 
@@ -194,13 +215,16 @@ class DataSync with ChangeNotifier {
       return Future.value(const Res(true));
     }
     var activeTask = _activeTask!;
+    _pendingTaskType = task;
     var pendingTask = activeTask.then(
       (_) {
         _pendingTask = null;
+        _pendingTaskType = null;
         return _startTask(task, run);
       },
       onError: (_) {
         _pendingTask = null;
+        _pendingTaskType = null;
         return _startTask(task, run);
       },
     );

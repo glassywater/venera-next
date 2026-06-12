@@ -35,22 +35,30 @@ void main() {
       final first = sync.uploadData();
       final second = sync.uploadData();
       final third = sync.uploadData();
+      var waitCompleted = false;
+      final waitFuture = sync.debugWaitForUploadBeforeClose().then((_) {
+        waitCompleted = true;
+      });
 
       expect(sync.isUploading, isTrue);
       expect(uploads, hasLength(1));
+      expect(waitCompleted, isFalse);
 
       uploads.first.complete(const Res(true));
       await pumpEventQueue();
 
       expect(sync.isUploading, isTrue);
       expect(uploads, hasLength(2));
+      expect(waitCompleted, isFalse);
 
       uploads[1].complete(const Res(true));
       final results = await Future.wait([first, second, third]);
+      await waitFuture;
 
       expect(results.every((result) => result.success), isTrue);
       expect(uploads, hasLength(2));
       expect(sync.isUploading, isFalse);
+      expect(waitCompleted, isTrue);
     },
   );
 
