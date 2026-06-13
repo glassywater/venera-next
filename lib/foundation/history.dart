@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +13,7 @@ import 'package:venera/foundation/image_provider/image_favorites_provider.dart';
 import 'package:venera/foundation/log.dart';
 import 'package:venera/foundation/sqlite_connection.dart';
 import 'package:venera/utils/ext.dart';
+import 'package:venera/utils/throttled_task_runner.dart';
 import 'package:venera/utils/translations.dart';
 
 import 'app.dart';
@@ -543,87 +543,6 @@ class HistoryManager with ChangeNotifier {
   static const _refreshConcurrency = 5;
   static const _refreshThrottleEvery = 5;
 
-  @visibleForTesting
-  static Future<void> debugRunThrottledRefreshTasks<T>(
-    List<T> tasks, {
-    int concurrency = _refreshConcurrency,
-    int throttleEvery = _refreshThrottleEvery,
-    Future<void> Function(Duration duration)? delay,
-    required Future<void> Function(T task) run,
-  }) {
-    return _runThrottledRefreshTasks(
-      tasks,
-      concurrency: concurrency,
-      throttleEvery: throttleEvery,
-      delay: delay,
-      run: run,
-    );
-  }
-
-  static Future<void> _runThrottledRefreshTasks<T>(
-    List<T> tasks, {
-    required int concurrency,
-    required int throttleEvery,
-    Future<void> Function(Duration duration)? delay,
-    required Future<void> Function(T task) run,
-  }) async {
-    if (tasks.isEmpty || concurrency <= 0) {
-      return;
-    }
-    final wait = delay ?? _waitRefreshThrottle;
-    var nextIndex = 0;
-    var throttleGate = Future<void>.value();
-    var schedulingLock = Future<void>.value();
-
-    Future<T?> takeNext() {
-      final previousSchedule = schedulingLock;
-      final releaseSchedule = Completer<void>();
-      schedulingLock = releaseSchedule.future;
-      return () async {
-        await previousSchedule;
-        try {
-          await throttleGate;
-          if (nextIndex >= tasks.length) {
-            return null;
-          }
-          final task = tasks[nextIndex];
-          nextIndex++;
-          if (throttleEvery > 0 && nextIndex % throttleEvery == 0) {
-            throttleGate = wait(_refreshThrottleDelay(nextIndex));
-          }
-          return task;
-        } finally {
-          releaseSchedule.complete();
-        }
-      }();
-    }
-
-    Future<void> worker() async {
-      while (true) {
-        final task = await takeNext();
-        if (task == null) {
-          return;
-        }
-        await run(task);
-      }
-    }
-
-    final workerCount = min(concurrency, tasks.length);
-    await Future.wait(List.generate(workerCount, (_) => worker()));
-  }
-
-  static Future<void> _waitRefreshThrottle(Duration duration) {
-    return Future.delayed(duration);
-  }
-
-  static Duration _refreshThrottleDelay(int scheduledCount) {
-    var delay = scheduledCount % 100 + 1;
-    if (delay > 10) {
-      delay = 10;
-    }
-    return Duration(seconds: delay);
-  }
-
   Stream<RefreshProgress> refreshAllHistoriesStream() {
     var controller = StreamController<RefreshProgress>();
     _refreshAllHistoriesBase(controller);
@@ -659,7 +578,7 @@ class HistoryManager with ChangeNotifier {
     current = 0;
     controller.add(RefreshProgress(total, current, success, failed, skipped));
 
-    await _runThrottledRefreshTasks(
+    await runThrottledTasks(
       historiesToRefresh,
       concurrency: _refreshConcurrency,
       throttleEvery: _refreshThrottleEvery,

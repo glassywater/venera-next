@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:venera/foundation/favorites.dart';
 import 'package:venera/foundation/log.dart';
-import 'package:venera/utils/channel.dart';
+import 'package:venera/utils/throttled_task_runner.dart';
+
+const _updateConcurrency = 5;
+const _updateThrottleEvery = 5;
 
 class ComicUpdateResult {
   final bool updated;
@@ -12,7 +15,9 @@ class ComicUpdateResult {
 }
 
 Future<ComicUpdateResult> updateComic(
-    FavoriteItemWithUpdateInfo c, String folder) async {
+  FavoriteItemWithUpdateInfo c,
+  String folder,
+) async {
   int retries = 3;
   while (true) {
     try {
@@ -38,9 +43,8 @@ Future<ComicUpdateResult> updateComic(
         id: c.id,
         name: newInfo.title,
         coverPath: newInfo.cover,
-        author: newInfo.subTitle ??
-            newInfo.tags['author']?.firstOrNull ??
-            c.author,
+        author:
+            newInfo.subTitle ?? newInfo.tags['author']?.firstOrNull ?? c.author,
         type: c.type,
         tags: newTags,
       );
@@ -80,8 +84,14 @@ class UpdateProgress {
   final FavoriteItemWithUpdateInfo? comic;
   final String? errorMessage;
 
-  UpdateProgress(this.total, this.current, this.errors, this.updated,
-      [this.comic, this.errorMessage]);
+  UpdateProgress(
+    this.total,
+    this.current,
+    this.errors,
+    this.updated, [
+    this.comic,
+    this.errorMessage,
+  ]);
 }
 
 void updateFolderBase(
@@ -116,50 +126,31 @@ void updateFolderBase(
   current = 0;
   stream.add(UpdateProgress(total, current, errors, updated));
 
-  var channel = Channel<FavoriteItemWithUpdateInfo>(10);
-
-  // Producer
-  () async {
-    var c = 0;
-    for (var comic in comicsToUpdate) {
-      await channel.push(comic);
-      c++;
-      // Throttle
-      if (c % 5 == 0) {
-        var delay = c % 100 + 1;
-        if (delay > 10) {
-          delay = 10;
-        }
-        await Future.delayed(Duration(seconds: delay));
+  await runThrottledTasks(
+    comicsToUpdate,
+    concurrency: _updateConcurrency,
+    throttleEvery: _updateThrottleEvery,
+    run: (comic) async {
+      var result = await updateComic(comic, folder);
+      current++;
+      if (result.updated) {
+        updated++;
       }
-    }
-    channel.close();
-  }();
-
-  // Consumers
-  var updateFutures = <Future>[];
-  for (var i = 0; i < 5; i++) {
-    var f = () async {
-      while (true) {
-        var comic = await channel.pop();
-        if (comic == null) {
-          break;
-        }
-        var result = await updateComic(comic, folder);
-        current++;
-        if (result.updated) {
-          updated++;
-        }
-        if (result.errorMessage != null) {
-          errors++;
-        }
-        stream.add(UpdateProgress(total, current, errors, updated, comic, result.errorMessage));
+      if (result.errorMessage != null) {
+        errors++;
       }
-    }();
-    updateFutures.add(f);
-  }
-
-  await Future.wait(updateFutures);
+      stream.add(
+        UpdateProgress(
+          total,
+          current,
+          errors,
+          updated,
+          comic,
+          result.errorMessage,
+        ),
+      );
+    },
+  );
 
   if (updated > 0) {
     LocalFavoritesManager().notifyChanges();
@@ -167,7 +158,6 @@ void updateFolderBase(
 
   stream.close();
 }
-
 
 Stream<UpdateProgress> updateFolder(String folder, bool ignoreCheckTime) {
   var stream = StreamController<UpdateProgress>();
@@ -178,14 +168,18 @@ Stream<UpdateProgress> updateFolder(String folder, bool ignoreCheckTime) {
 Future<String> getUpdatedComicsAsJson(String folder) async {
   var comics = LocalFavoritesManager().getComicsWithUpdatesInfo(folder);
   var updatedComics = comics.where((c) => c.hasNewUpdate).toList();
-  var jsonList = updatedComics.map((c) => {
-    'id': c.id,
-    'name': c.name,
-    'coverUrl': c.coverPath,
-    'author': c.author,
-    'type': c.type.sourceKey,
-    'updateTime': c.updateTime,
-    'tags': c.tags,
-  }).toList();
+  var jsonList = updatedComics
+      .map(
+        (c) => {
+          'id': c.id,
+          'name': c.name,
+          'coverUrl': c.coverPath,
+          'author': c.author,
+          'type': c.type.sourceKey,
+          'updateTime': c.updateTime,
+          'tags': c.tags,
+        },
+      )
+      .toList();
   return jsonEncode(jsonList);
 }
