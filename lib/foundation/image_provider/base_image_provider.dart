@@ -20,6 +20,24 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     return _cancelSignals[checkStop] ?? _neverCancelSignal;
   }
 
+  @visibleForTesting
+  static Future<void> debugWaitForRetryDelay(
+    Duration duration,
+    Future<void> cancelSignal,
+  ) {
+    return _waitForRetryDelay(duration, cancelSignal);
+  }
+
+  static Future<void> _waitForRetryDelay(
+    Duration duration,
+    Future<void> cancelSignal,
+  ) {
+    return Future.any([
+      Future<void>.delayed(duration),
+      cancelSignal,
+    ]);
+  }
+
   static const int maxImagePixel = 2560 * 1440;
 
   static TargetImageSize _getTargetSize(int width, int height) {
@@ -106,7 +124,10 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
           if (retryTime > (1 << 3) || stop) {
             rethrow;
           }
-          await Future.delayed(Duration(seconds: retryTime));
+          await _waitForRetryDelay(
+            Duration(seconds: retryTime),
+            stopCompleter.future,
+          );
         }
       }
 
