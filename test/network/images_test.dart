@@ -9,6 +9,30 @@ void main() {
     ImageDownloader.cancelAllLoadingImages();
   });
 
+  test('loadComicImage stops retrying when retry budget is exhausted', () {
+    expect(
+      ImageDownloader.debugShouldRetryImageLoad(
+        retriesRemaining: 1,
+        hasOnLoadFailed: true,
+      ),
+      isTrue,
+    );
+    expect(
+      ImageDownloader.debugShouldRetryImageLoad(
+        retriesRemaining: 0,
+        hasOnLoadFailed: true,
+      ),
+      isFalse,
+    );
+    expect(
+      ImageDownloader.debugShouldRetryImageLoad(
+        retriesRemaining: 5,
+        hasOnLoadFailed: false,
+      ),
+      isFalse,
+    );
+  });
+
   test(
     'loadComicImage cancels source stream after last listener cancels',
     () async {

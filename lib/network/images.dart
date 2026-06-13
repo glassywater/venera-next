@@ -20,6 +20,24 @@ abstract class ImageDownloader {
   )?
   debugLoadComicImageUnwrapped;
 
+  @visibleForTesting
+  static bool debugShouldRetryImageLoad({
+    required int retriesRemaining,
+    required bool hasOnLoadFailed,
+  }) {
+    return _shouldRetryImageLoad(
+      retriesRemaining: retriesRemaining,
+      hasOnLoadFailed: hasOnLoadFailed,
+    );
+  }
+
+  static bool _shouldRetryImageLoad({
+    required int retriesRemaining,
+    required bool hasOnLoadFailed,
+  }) {
+    return retriesRemaining > 0 && hasOnLoadFailed;
+  }
+
   static Stream<ImageDownloadProgress> loadThumbnail(
       String url, String? sourceKey,
       [String? cid]) async* {
@@ -164,7 +182,7 @@ abstract class ImageDownloader {
               ?.call(imageKey, cid, eid)) ??
           {};
     }
-    var retryLimit = 5;
+    var retriesRemaining = 5;
     while (true) {
       try {
         configs['headers'] ??= {
@@ -241,17 +259,22 @@ abstract class ImageDownloader {
         );
         return;
       } catch (e) {
-        if (retryLimit < 0 || onLoadFailed == null) {
+        final onLoadFailedCallback = onLoadFailed;
+        if (onLoadFailedCallback == null ||
+            !_shouldRetryImageLoad(
+              retriesRemaining: retriesRemaining,
+              hasOnLoadFailed: true,
+            )) {
           rethrow;
         }
-        var newConfig = await onLoadFailed();
+        retriesRemaining--;
+        var newConfig = await onLoadFailedCallback();
         (configs['onLoadFailed'] as JSInvokable).free();
         onLoadFailed = null;
         if (newConfig == null) {
           rethrow;
         }
         configs = newConfig;
-        retryLimit--;
       } finally {
         if (onLoadFailed != null) {
           (configs['onLoadFailed'] as JSInvokable).free();
