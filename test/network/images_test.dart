@@ -1,7 +1,27 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:venera/network/images.dart';
+
+class _FakeJSInvokable extends JSInvokable {
+  _FakeJSInvokable(this.callback);
+
+  final dynamic Function(List args) callback;
+
+  int destroyCount = 0;
+
+  @override
+  dynamic invoke(List args, [dynamic thisVal]) {
+    return callback(args);
+  }
+
+  @override
+  void destroy() {
+    destroyCount++;
+  }
+}
 
 void main() {
   tearDown(() {
@@ -31,6 +51,54 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test('image onResponse callback is freed after valid result', () async {
+    final callback = _FakeJSInvokable((args) {
+      expect(args.single, isA<Uint8List>());
+      return <int>[3, 2, 1];
+    });
+
+    final result = await ImageDownloader.debugApplyImageResponseCallback(
+      callback,
+      <int>[1, 2, 3],
+    );
+
+    expect(result, <int>[3, 2, 1]);
+    expect(callback.destroyCount, 1);
+  });
+
+  test('image onResponse callback is freed after future result', () async {
+    final callback = _FakeJSInvokable((args) async => <int>[4, 5, 6]);
+
+    final result = await ImageDownloader.debugApplyImageResponseCallback(
+      callback,
+      <int>[1, 2, 3],
+    );
+
+    expect(result, <int>[4, 5, 6]);
+    expect(callback.destroyCount, 1);
+  });
+
+  test('image onResponse callback is freed after invalid result', () async {
+    final callback = _FakeJSInvokable((args) => 'bad-result');
+
+    await expectLater(
+      ImageDownloader.debugApplyImageResponseCallback(callback, <int>[1]),
+      throwsA('Error: Invalid onResponse result.'),
+    );
+    expect(callback.destroyCount, 1);
+  });
+
+  test('image onResponse callback is freed after callback error', () async {
+    final error = StateError('boom');
+    final callback = _FakeJSInvokable((args) => throw error);
+
+    await expectLater(
+      ImageDownloader.debugApplyImageResponseCallback(callback, <int>[1]),
+      throwsA(same(error)),
+    );
+    expect(callback.destroyCount, 1);
   });
 
   test(

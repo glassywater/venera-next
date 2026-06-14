@@ -38,6 +38,32 @@ abstract class ImageDownloader {
     return retriesRemaining > 0 && hasOnLoadFailed;
   }
 
+  @visibleForTesting
+  static Future<List<int>> debugApplyImageResponseCallback(
+    JSInvokable onResponse,
+    List<int> buffer,
+  ) {
+    return _applyImageResponseCallback(onResponse, buffer);
+  }
+
+  static Future<List<int>> _applyImageResponseCallback(
+    JSInvokable onResponse,
+    List<int> buffer,
+  ) async {
+    try {
+      dynamic result = onResponse([Uint8List.fromList(buffer)]);
+      if (result is Future) {
+        result = await result;
+      }
+      if (result is List<int>) {
+        return result;
+      }
+      throw "Error: Invalid onResponse result.";
+    } finally {
+      onResponse.free();
+    }
+  }
+
   static Stream<ImageDownloadProgress> loadThumbnail(
       String url, String? sourceKey,
       [String? cid]) async* {
@@ -103,9 +129,10 @@ abstract class ImageDownloader {
     }
 
     if (configs['onResponse'] is JSInvokable) {
-      final uint8List = Uint8List.fromList(buffer);
-      buffer = (configs['onResponse'] as JSInvokable)([uint8List]);
-      (configs['onResponse'] as JSInvokable).free();
+      buffer = await _applyImageResponseCallback(
+        configs['onResponse'] as JSInvokable,
+        buffer,
+      );
     }
 
     await CacheManager().writeCache(cacheKey, buffer);
@@ -223,16 +250,10 @@ abstract class ImageDownloader {
         }
 
         if (configs['onResponse'] is JSInvokable) {
-          dynamic result = (configs['onResponse'] as JSInvokable)([Uint8List.fromList(buffer)]);
-          if (result is Future) {
-            result = await result;
-          }
-          if (result is List<int>) {
-            buffer = result;
-          } else {
-            throw "Error: Invalid onResponse result.";
-          }
-          (configs['onResponse'] as JSInvokable).free();
+          buffer = await _applyImageResponseCallback(
+            configs['onResponse'] as JSInvokable,
+            buffer,
+          );
         }
 
         Uint8List data;
