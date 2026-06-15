@@ -125,4 +125,83 @@ void main() {
       isNull,
     );
   });
+
+  test('normalize comic details accepts nested dynamic maps', () {
+    final details = debugNormalizeComicSourceComicDetails(
+      <dynamic, dynamic>{
+        'title': 'Detail',
+        'cover': 'cover.jpg',
+        'tags': <dynamic, dynamic>{
+          'author': ['name'],
+          'ignored': 'not-list',
+        },
+        'thumbnails': ['thumb-1.jpg'],
+        'recommend': [
+          <dynamic, dynamic>{
+            'title': 'Comic A',
+            'cover': 'cover-a.jpg',
+            'id': 'a',
+            'tags': ['tag'],
+          },
+        ],
+        'comments': [
+          <dynamic, dynamic>{
+            'userName': 'reader',
+            'content': 'nice',
+            'id': 'comment-1',
+          },
+        ],
+      },
+      'source',
+      'detail-id',
+    );
+
+    expect(details!['sourceKey'], 'source');
+    expect(details['comicId'], 'detail-id');
+
+    final comicDetails = ComicDetails.fromJson(details);
+    expect(comicDetails.title, 'Detail');
+    expect(comicDetails.tags, {
+      'author': ['name'],
+    });
+    expect(comicDetails.thumbnails, ['thumb-1.jpg']);
+    expect(comicDetails.recommend!.single.sourceKey, 'source');
+    expect(comicDetails.comments!.single.id, 'comment-1');
+  });
+
+  test('normalize comic details rejects invalid nested data', () {
+    expect(
+      debugNormalizeComicSourceComicDetails('bad', 'source', 'detail-id'),
+      isNull,
+    );
+    expect(
+      debugNormalizeComicSourceComicDetails(
+        {
+          'title': 'Detail',
+          'cover': 'cover.jpg',
+          'tags': <dynamic, dynamic>{
+            1: ['bad'],
+          },
+        },
+        'source',
+        'detail-id',
+      ),
+      isNull,
+    );
+    expect(
+      debugNormalizeComicSourceComicDetails(
+        {
+          'title': 'Detail',
+          'cover': 'cover.jpg',
+          'tags': <dynamic, dynamic>{
+            'author': ['name'],
+          },
+          'recommend': ['bad'],
+        },
+        'source',
+        'detail-id',
+      ),
+      isNull,
+    );
+  });
 }

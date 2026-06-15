@@ -62,6 +62,15 @@ List<Comic>? debugNormalizeComicSourceComicList(
   return _normalizeComicSourceComicList(value, sourceKey);
 }
 
+@visibleForTesting
+Map<String, dynamic>? debugNormalizeComicSourceComicDetails(
+  dynamic value,
+  String sourceKey,
+  String comicId,
+) {
+  return _normalizeComicSourceComicDetails(value, sourceKey, comicId);
+}
+
 Map<String, dynamic>? _normalizeComicSourceLoadingConfig(dynamic value) {
   return _normalizeComicSourceStringKeyedMap(value);
 }
@@ -95,19 +104,101 @@ List<String>? _normalizeComicSourceStringList(dynamic value) {
   return list;
 }
 
-List<Comic>? _normalizeComicSourceComicList(dynamic value, String sourceKey) {
+List<Map<String, dynamic>>? _normalizeComicSourceStringKeyedMapList(
+  dynamic value,
+) {
   if (value is! List) {
     return null;
   }
-  var comics = <Comic>[];
+  var list = <Map<String, dynamic>>[];
   for (var item in value) {
-    final comic = _normalizeComicSourceStringKeyedMap(item);
-    if (comic == null) {
+    final map = _normalizeComicSourceStringKeyedMap(item);
+    if (map == null) {
       return null;
     }
-    comics.add(Comic.fromJson(comic, sourceKey));
+    list.add(map);
+  }
+  return list;
+}
+
+List<Comic>? _normalizeComicSourceComicList(dynamic value, String sourceKey) {
+  final items = _normalizeComicSourceStringKeyedMapList(value);
+  if (items == null) return null;
+  var comics = <Comic>[];
+  for (var item in items) {
+    comics.add(Comic.fromJson(item, sourceKey));
   }
   return comics;
+}
+
+Map<String, List<String>>? _normalizeComicSourceTagMap(dynamic value) {
+  if (value is! Map) {
+    return null;
+  }
+  var tags = <String, List<String>>{};
+  for (var entry in value.entries) {
+    final key = entry.key;
+    final tagList = entry.value;
+    if (tagList is! List) {
+      continue;
+    }
+    if (key is! String) {
+      return null;
+    }
+    final normalized = _normalizeComicSourceStringList(tagList);
+    if (normalized == null) {
+      return null;
+    }
+    tags[key] = normalized;
+  }
+  return tags;
+}
+
+Map<String, dynamic>? _normalizeComicSourceComicDetails(
+  dynamic value,
+  String sourceKey,
+  String comicId,
+) {
+  final data = _normalizeComicSourceStringKeyedMap(value);
+  if (data == null) return null;
+
+  final tags = _normalizeComicSourceTagMap(data["tags"]);
+  if (tags == null) return null;
+  data["tags"] = tags;
+
+  if (data["thumbnails"] != null) {
+    final thumbnails = _normalizeComicSourceStringList(data["thumbnails"]);
+    if (thumbnails == null) return null;
+    data["thumbnails"] = thumbnails;
+  }
+
+  if (data["recommend"] != null) {
+    final recommend = _normalizeComicSourceStringKeyedMapList(
+      data["recommend"],
+    );
+    if (recommend == null) return null;
+    data["recommend"] = recommend;
+  }
+
+  if (data["comments"] != null) {
+    final comments = _normalizeComicSourceStringKeyedMapList(data["comments"]);
+    if (comments == null) return null;
+    data["comments"] = comments;
+  }
+
+  data["sourceKey"] = sourceKey;
+  data["comicId"] = comicId;
+  return data;
+}
+
+({Map<String, dynamic> data, List<String> items})?
+_normalizeComicSourceStringListResult(dynamic value, String key) {
+  final data = _normalizeComicSourceStringKeyedMap(value);
+  final items = _normalizeComicSourceStringList(data?[key]);
+  if (data == null || items == null) {
+    return null;
+  }
+  return (data: data, items: items);
 }
 
 Map<String, Map<String, dynamic>>? _normalizeComicSourceSettings(
