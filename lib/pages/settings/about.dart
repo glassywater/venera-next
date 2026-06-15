@@ -112,15 +112,152 @@ class _ChangelogPageState extends State<ChangelogPage> {
                   child: Center(child: CircularProgressIndicator()),
                 );
               }
-              return SelectableText(
-                snapshot.data!,
-                style: const TextStyle(fontFamily: "monospace"),
+              return SelectionArea(
+                child: _ChangelogMarkdown(snapshot.data!),
               ).paddingAll(16).toSliver();
             },
           ),
         ],
       ),
     );
+  }
+}
+
+class _ChangelogMarkdown extends StatelessWidget {
+  const _ChangelogMarkdown(this.data);
+
+  final String data;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = data.split(RegExp(r'\r?\n'));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [for (final line in lines) _ChangelogMarkdownBlock(line)],
+    );
+  }
+}
+
+class _ChangelogMarkdownBlock extends StatelessWidget {
+  const _ChangelogMarkdownBlock(this.line);
+
+  final String line;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final trimmed = line.trimRight();
+    if (trimmed.isEmpty) {
+      return const SizedBox(height: 8);
+    }
+    if (trimmed.startsWith('### ')) {
+      return _blockText(
+        context,
+        trimmed.substring(4),
+        theme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        top: 14,
+        bottom: 4,
+      );
+    }
+    if (trimmed.startsWith('## ')) {
+      return _blockText(
+        context,
+        trimmed.substring(3),
+        theme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        top: 20,
+        bottom: 6,
+      );
+    }
+    if (trimmed.startsWith('# ')) {
+      return _blockText(
+        context,
+        trimmed.substring(2),
+        theme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        bottom: 8,
+      );
+    }
+    if (trimmed.startsWith('- ')) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '•',
+              style: theme.bodyMedium?.copyWith(
+                color: colorScheme.primary,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: theme.bodyMedium?.copyWith(height: 1.35),
+                  children: _inlineSpans(context, trimmed.substring(2)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return _blockText(
+      context,
+      trimmed,
+      theme.bodyMedium?.copyWith(height: 1.35),
+      bottom: 6,
+    );
+  }
+
+  Widget _blockText(
+    BuildContext context,
+    String text,
+    TextStyle? style, {
+    double top = 0,
+    double bottom = 0,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(top: top, bottom: bottom),
+      child: Text.rich(
+        TextSpan(style: style, children: _inlineSpans(context, text)),
+      ),
+    );
+  }
+
+  List<TextSpan> _inlineSpans(BuildContext context, String text) {
+    final spans = <TextSpan>[];
+    final colorScheme = Theme.of(context).colorScheme;
+    final baseStyle = DefaultTextStyle.of(context).style;
+    var index = 0;
+    while (index < text.length) {
+      final start = text.indexOf('`', index);
+      if (start == -1) {
+        spans.add(TextSpan(text: text.substring(index)));
+        break;
+      }
+      final end = text.indexOf('`', start + 1);
+      if (end == -1) {
+        spans.add(TextSpan(text: text.substring(index)));
+        break;
+      }
+      if (start > index) {
+        spans.add(TextSpan(text: text.substring(index, start)));
+      }
+      spans.add(
+        TextSpan(
+          text: text.substring(start + 1, end),
+          style: baseStyle.copyWith(
+            fontFamily: 'monospace',
+            color: colorScheme.onSecondaryContainer,
+            backgroundColor: colorScheme.secondaryContainer,
+          ),
+        ),
+      );
+      index = end + 1;
+    }
+    return spans;
   }
 }
 
