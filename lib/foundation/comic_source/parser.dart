@@ -769,7 +769,8 @@ class ComicSourceParser {
         var res = await JsEngine().runCode("""
           ComicSource.sources.$_key.comic.loadInfo(${jsonEncode(id)})
         """);
-        if (res is! Map<String, dynamic>) throw "Invalid data";
+        res = _normalizeComicSourceStringKeyedMap(res);
+        if (res == null) throw "Invalid data";
         res['comicId'] = id;
         res['sourceKey'] = _key;
         return Res(ComicDetails.fromJson(res));
@@ -786,7 +787,10 @@ class ComicSourceParser {
         var res = await JsEngine().runCode("""
           ComicSource.sources.$_key.comic.loadEp(${jsonEncode(id)}, ${jsonEncode(ep)})
         """);
-        return Res(List.from(res["images"]));
+        res = _normalizeComicSourceStringKeyedMap(res);
+        final images = _normalizeComicSourceStringList(res?["images"]);
+        if (images == null) throw "Invalid data";
+        return Res(images);
       } catch (e, s) {
         Log.error("Network", "$e\n$s");
         return Res.error(e.toString());
@@ -1107,7 +1111,10 @@ class ComicSourceParser {
         var res = await JsEngine().runCode("""
           ComicSource.sources.$_key.comic.loadThumbnails(${jsonEncode(id)}, ${jsonEncode(next)})
         """);
-        return Res(List<String>.from(res['thumbnails']), subData: res['next']);
+        res = _normalizeComicSourceStringKeyedMap(res);
+        final thumbnails = _normalizeComicSourceStringList(res?['thumbnails']);
+        if (thumbnails == null) throw "Invalid data";
+        return Res(thumbnails, subData: res?['next']);
       } catch (e, s) {
         Log.error("Network", "$e\n$s");
         return Res.error(e.toString());

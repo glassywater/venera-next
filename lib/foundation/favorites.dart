@@ -270,7 +270,9 @@ class LocalFavoritesManager with ChangeNotifier {
         break;
       }
     }
-    await appdata.ensureInit();
+    if (App.isInitialized) {
+      await appdata.ensureInit();
+    }
     // Make sure the follow updates folder is ready
     var followUpdateFolder = appdata.settings['followUpdatesFolder'];
     if (followUpdateFolder is String &&

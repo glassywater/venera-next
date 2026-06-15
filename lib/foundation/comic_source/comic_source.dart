@@ -40,25 +40,51 @@ Map<String, Map<String, dynamic>>? debugNormalizeComicSourceSettings(
 }
 
 @visibleForTesting
-Map<String, dynamic>? debugNormalizeComicSourceLoadingConfig(
-  dynamic value,
-) {
+Map<String, dynamic>? debugNormalizeComicSourceLoadingConfig(dynamic value) {
   return _normalizeComicSourceLoadingConfig(value);
 }
 
+@visibleForTesting
+Map<String, dynamic>? debugNormalizeComicSourceStringKeyedMap(dynamic value) {
+  return _normalizeComicSourceStringKeyedMap(value);
+}
+
+@visibleForTesting
+List<String>? debugNormalizeComicSourceStringList(dynamic value) {
+  return _normalizeComicSourceStringList(value);
+}
+
 Map<String, dynamic>? _normalizeComicSourceLoadingConfig(dynamic value) {
+  return _normalizeComicSourceStringKeyedMap(value);
+}
+
+Map<String, dynamic>? _normalizeComicSourceStringKeyedMap(dynamic value) {
   if (value is! Map) {
     return null;
   }
-  var config = <String, dynamic>{};
+  var map = <String, dynamic>{};
   for (var entry in value.entries) {
     final key = entry.key;
     if (key is! String) {
       return null;
     }
-    config[key] = entry.value;
+    map[key] = entry.value;
   }
-  return config;
+  return map;
+}
+
+List<String>? _normalizeComicSourceStringList(dynamic value) {
+  if (value is! List) {
+    return null;
+  }
+  var list = <String>[];
+  for (var item in value) {
+    if (item is! String) {
+      return null;
+    }
+    list.add(item);
+  }
+  return list;
 }
 
 Map<String, Map<String, dynamic>>? _normalizeComicSourceSettings(

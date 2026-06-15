@@ -26,14 +26,8 @@ void main() {
     final callback = _FakeJSInvokable((args) => 'called:${args.single}');
 
     final settings = debugNormalizeComicSourceSettings({
-      'reader': {
-        'label': 'Reader',
-        'onTap': callback,
-        1: 'ignored',
-      },
-      2: {
-        'label': 'ignored group',
-      },
+      'reader': {'label': 'Reader', 'onTap': callback, 1: 'ignored'},
+      2: {'label': 'ignored group'},
       'invalid': 'not a map',
     });
 
@@ -53,12 +47,10 @@ void main() {
   });
 
   test('normalize loading config accepts dynamically typed map', () {
-    final config = debugNormalizeComicSourceLoadingConfig(
-      <dynamic, dynamic>{
-        'url': 'https://example.com/image.jpg',
-        'headers': {'referer': 'https://example.com'},
-      },
-    );
+    final config = debugNormalizeComicSourceLoadingConfig(<dynamic, dynamic>{
+      'url': 'https://example.com/image.jpg',
+      'headers': {'referer': 'https://example.com'},
+    });
 
     expect(config, {
       'url': 'https://example.com/image.jpg',
@@ -70,10 +62,39 @@ void main() {
     expect(debugNormalizeComicSourceLoadingConfig(null), isNull);
     expect(debugNormalizeComicSourceLoadingConfig('bad'), isNull);
     expect(
-      debugNormalizeComicSourceLoadingConfig(<dynamic, dynamic>{
-        1: 'bad-key',
-      }),
+      debugNormalizeComicSourceLoadingConfig(<dynamic, dynamic>{1: 'bad-key'}),
       isNull,
     );
+  });
+
+  test('normalize string keyed map accepts dynamic map', () {
+    final map = debugNormalizeComicSourceStringKeyedMap(<dynamic, dynamic>{
+      'images': ['1.jpg', '2.jpg'],
+      'next': 'page-2',
+    });
+
+    expect(map, {
+      'images': ['1.jpg', '2.jpg'],
+      'next': 'page-2',
+    });
+  });
+
+  test('normalize string keyed map rejects invalid keys', () {
+    expect(debugNormalizeComicSourceStringKeyedMap(null), isNull);
+    expect(debugNormalizeComicSourceStringKeyedMap('bad'), isNull);
+    expect(
+      debugNormalizeComicSourceStringKeyedMap(<dynamic, dynamic>{1: 'bad'}),
+      isNull,
+    );
+  });
+
+  test('normalize string list rejects invalid entries', () {
+    expect(debugNormalizeComicSourceStringList(['1.jpg', '2.jpg']), [
+      '1.jpg',
+      '2.jpg',
+    ]);
+    expect(debugNormalizeComicSourceStringList(null), isNull);
+    expect(debugNormalizeComicSourceStringList('bad'), isNull);
+    expect(debugNormalizeComicSourceStringList(['1.jpg', 2]), isNull);
   });
 }
