@@ -136,10 +136,26 @@ jobs:
         run: |
           flutter pub get --enforce-lockfile
           python windows/build.py
+      - name: Validate Windows artifacts
+        shell: pwsh
+        run: |
+          $zip = @(Get-ChildItem -Path build/windows -File -Filter 'Venera-*-windows.zip')
+          $installer = @(Get-ChildItem -Path build/windows -File -Filter 'Venera-*-windows-installer.exe')
+          if ($zip.Count -ne 1) { throw "Expected one Windows zip, found $($zip.Count)." }
+          if ($installer.Count -ne 1) { throw "Expected one Windows installer, found $($installer.Count)." }
+          $artifacts = @($zip + $installer)
+          $empty = @($artifacts | Where-Object { $_.Length -le 0 })
+          if ($empty.Count -gt 0) {
+            throw "Windows artifacts contain empty files: $($empty.Name -join ', ')"
+          }
+          $artifacts | Sort-Object Name | ForEach-Object { "$($_.Name) $($_.Length) bytes" }
       - uses: actions/upload-artifact@v4
         with:
           name: windows_build
-          path: build/windows/Venera-*
+          path: |
+            build/windows/Venera-*-windows.zip
+            build/windows/Venera-*-windows-installer.exe
+          if-no-files-found: error
   Build_Linux:
     runs-on: ubuntu-22.04
     steps:
