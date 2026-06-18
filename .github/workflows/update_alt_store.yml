@@ -50,13 +50,19 @@ jobs:
           git checkout -b "$branch_name"
           git commit -m "Updated source with latest release"
           git push -u origin "$branch_name"
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
           
-          # Create PR using GitHub CLI
-          gh pr create \
-          --title "Update AltStore source with latest release" \
-          --body "This PR updates the alt_store.json file with the latest release information." \
-          --head "$branch_name" \
-          --base main
+          pr_output=$(gh pr create \
+            --title "Update AltStore source with latest release" \
+            --body "This PR updates the alt_store.json file with the latest release information." \
+            --head "$branch_name" \
+            --base main 2>&1) || {
+            echo "::warning::Unable to create pull request automatically: $pr_output"
+            echo "pr_created=false" >> $GITHUB_OUTPUT
+            echo "changes=true" >> $GITHUB_OUTPUT
+            exit 0
+          }
+          echo "pr_created=true" >> $GITHUB_OUTPUT
           
           echo "changes=true" >> $GITHUB_OUTPUT
         fi
@@ -76,6 +82,14 @@ jobs:
           echo "✅ Changes Detected and Applied" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The alt_store.json file has been updated with the latest release information." >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ steps.update_source.outputs.branch_name }}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Update branch: \`${{ steps.update_source.outputs.branch_name }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ steps.update_source.outputs.pr_created }}" == "false" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Automatic PR creation was skipped because the workflow token is not permitted to create pull requests." >> $GITHUB_STEP_SUMMARY
+          fi
         else
           echo "## Update Altstore Source Summary 🚀" >> $GITHUB_STEP_SUMMARY
           echo "🔍 No Changes Detected" >> $GITHUB_STEP_SUMMARY
