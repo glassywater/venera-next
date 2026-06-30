@@ -10,6 +10,7 @@
 - 升级 Gradle 版本到 8.14，解决 Flutter 废弃警告。
 - 修复 AltStore 源更新工作流在无法自动创建 PR 时标记失败的问题。
 - 更新 AltStore 源到 v1.9.1 正式版。
+- 升级 GitHub Actions（checkout、upload/download-artifact、setup-java、setup-python）至 v5，消除 Node.js 20 弃用警告。
 
 ## v1.9.1
 
