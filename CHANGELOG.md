@@ -12,6 +12,7 @@
 - 更新 AltStore 源到 v1.9.1 正式版。
 - 升级 GitHub Actions（checkout、upload/download-artifact、setup-java、setup-python）至 v5，消除 Node.js 20 弃用警告。
 - 调整阅读模式选项顺序，将瀑布流模式置于列表顶部并设为默认阅读模式。
+- 调整 Toast 弹窗位置，移动端上移至屏幕下方 1/4 处，避免被设备导航栏遮挡；桌面端保持原位。
 
 ## v1.9.1
 

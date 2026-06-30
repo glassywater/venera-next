@@ -32,8 +32,12 @@ class _ToastOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var bottom = App.isMobile
+        ? MediaQuery.of(context).size.height * 0.25 +
+            MediaQuery.of(context).viewPadding.bottom
+        : 24 + MediaQuery.of(context).viewInsets.bottom;
     return Positioned(
-      bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+      bottom: bottom,
       left: 0,
       right: 0,
       child: Align(
