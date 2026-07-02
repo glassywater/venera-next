@@ -5,6 +5,7 @@ import 'package:venera/components/components.dart';
 import 'package:venera/foundation/app.dart';
 import 'package:venera/foundation/appdata.dart';
 import 'package:venera/foundation/favorites.dart';
+import 'package:venera/pages/comic_details_page/comic_page.dart';
 import 'package:venera/utils/data_sync.dart';
 import 'package:venera/utils/translations.dart';
 import '../foundation/global_state.dart';
@@ -21,34 +22,42 @@ class _FollowUpdatesWidgetState
     extends AutomaticGlobalState<FollowUpdatesWidget> {
   int _count = 0;
 
+  List<FavoriteItemWithUpdateInfo> updatedComics = [];
+
   String? get folder => appdata.settings["followUpdatesFolder"];
 
-  void getCount() {
+  void updatePreviewData() {
     if (folder == null) {
       _count = 0;
+      updatedComics = [];
       return;
     }
     if (!LocalFavoritesManager().folderNames.contains(folder)) {
       _count = 0;
+      updatedComics = [];
       appdata.settings["followUpdatesFolder"] = null;
       Future.microtask(() {
         appdata.saveData();
       });
     } else {
       _count = LocalFavoritesManager().countUpdates(folder!);
+      updatedComics = LocalFavoritesManager()
+          .getComicsWithUpdatesInfo(folder!)
+          .where((comic) => comic.hasNewUpdate)
+          .toList();
     }
   }
 
   void updateCount() {
     setState(() {
-      getCount();
+      updatePreviewData();
     });
   }
 
   @override
   void initState() {
     super.initState();
-    getCount();
+    updatePreviewData();
   }
 
   @override
@@ -76,30 +85,55 @@ class _FollowUpdatesWidgetState
                 height: 56,
                 child: Row(
                   children: [
-                    Center(
-                      child: Text('Follow Updates'.tl, style: ts.s18),
-                    ),
+                    Center(child: Text('Follow Updates'.tl, style: ts.s18)),
+                    if (_count > 0)
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '@c updates'.tlParams({'c': _count}),
+                          style: ts.s12,
+                        ),
+                      ),
                     const Spacer(),
                     const Icon(Icons.arrow_right),
                   ],
                 ),
               ).paddingHorizontal(16),
-              if (_count > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  margin: const EdgeInsets.only(bottom: 16, left: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Theme.of(context).colorScheme.primaryContainer,
+              if (updatedComics.isNotEmpty)
+                SizedBox(
+                  height: 136,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: updatedComics.length,
+                    itemBuilder: (context, index) {
+                      final comic = updatedComics[index];
+                      final heroID = comic.id.hashCode;
+                      return SimpleComicTile(
+                        comic: comic,
+                        heroID: heroID,
+                        onTap: () {
+                          context.to(
+                            () => ComicPage(
+                              id: comic.id,
+                              sourceKey: comic.type.sourceKey,
+                              cover: comic.cover,
+                              title: comic.title,
+                              heroID: heroID,
+                            ),
+                          );
+                        },
+                      ).paddingHorizontal(8).paddingVertical(2);
+                    },
                   ),
-                  child: Text(
-                    '@c updates'.tlParams({
-                      'c': _count,
-                    }),
-                    style: ts.s16,
-                  ),
-                ),
+                ).paddingHorizontal(8).paddingBottom(16),
             ],
           ),
         ),
