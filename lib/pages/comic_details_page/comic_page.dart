@@ -456,41 +456,12 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 children: [
                   Icon(Icons.history, color: context.useTextColor(Colors.teal)),
                   const SizedBox(width: 8),
-                  Builder(
-                    builder: (context) {
-                      bool haveChapter = comic.chapters != null;
-                      var page = history!.page;
-                      var ep = history!.ep;
-                      var group = history!.group;
-                      String text;
-                      if (haveChapter) {
-                        var epName = "E$ep";
-                        String? groupName;
-                        try {
-                          if (group == null) {
-                            epName = comic.chapters!.titles.elementAt(
-                              math.min(ep - 1, comic.chapters!.length - 1),
-                            );
-                          } else {
-                            groupName = comic.chapters!.groups.elementAt(
-                              group - 1,
-                            );
-                            epName = comic.chapters!
-                                .getGroupByIndex(group - 1)
-                                .values
-                                .elementAt(ep - 1);
-                          }
-                        } catch (e) {
-                          // ignore
-                        }
-                        text = groupName == null
-                            ? "${"Last Reading".tl}: $epName P$page"
-                            : "${"Last Reading".tl}: $groupName $epName P$page";
-                      } else {
-                        text = "${"Last Reading".tl}: P$page";
-                      }
-                      return Text(text);
-                    },
+                  Flexible(
+                    child: Text(
+                      _buildLastReadingText(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   const SizedBox(width: 4),
                 ],
@@ -500,6 +471,58 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         ],
       ).paddingTop(16),
     );
+  }
+
+  String _buildLastReadingText() {
+    final currentHistory = history!;
+    final page = currentHistory.page <= 0 ? 1 : currentHistory.page;
+    final chapters = comic.chapters;
+    if (chapters == null || chapters.length == 0) {
+      return "${"Last Reading".tl}: P$page";
+    }
+
+    String chapterTitle = "E${currentHistory.ep}";
+    String chapterProgress;
+    String? groupName;
+
+    try {
+      if (chapters.isGrouped) {
+        final groupIndex = (currentHistory.group ?? 1)
+            .clamp(1, chapters.groupCount)
+            .toInt();
+        final group = chapters.getGroupByIndex(groupIndex - 1);
+        final groupChapterIndex = currentHistory.ep
+            .clamp(1, group.length)
+            .toInt();
+        var globalChapterIndex = groupChapterIndex;
+        for (int i = 0; i < groupIndex - 1; i++) {
+          globalChapterIndex += chapters.getGroupByIndex(i).length;
+        }
+        chapterTitle = group.values.elementAt(groupChapterIndex - 1);
+        chapterProgress = "Chapter @ep".tlParams({
+          "ep": "$globalChapterIndex/${chapters.length}",
+        });
+        groupName = chapters.groups.elementAt(groupIndex - 1);
+      } else {
+        final chapterIndex = currentHistory.ep
+            .clamp(1, chapters.length)
+            .toInt();
+        chapterTitle = chapters.titles.elementAt(chapterIndex - 1);
+        chapterProgress = "Chapter @ep".tlParams({
+          "ep": "$chapterIndex/${chapters.length}",
+        });
+      }
+    } catch (_) {
+      chapterProgress = "Chapter @ep".tlParams({"ep": currentHistory.ep});
+    }
+
+    final parts = [
+      chapterProgress,
+      if (groupName != null) groupName,
+      chapterTitle,
+      "P$page",
+    ];
+    return "${"Last Reading".tl}: ${parts.join(" - ")}";
   }
 
   Widget buildDescription() {
