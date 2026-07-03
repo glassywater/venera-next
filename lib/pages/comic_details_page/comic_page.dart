@@ -103,8 +103,6 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
 
   var scrollController = ScrollController();
 
-  bool isDownloaded = false;
-
   bool showFAB = false;
 
   @override
@@ -300,9 +298,6 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         }
       }
     }
-    if (comic.chapters == null) {
-      isDownloaded = LocalManager().isDownloaded(comic.id, comic.comicType, 0);
-    }
   }
 
   Iterable<Widget> buildTitle() sync* {
@@ -383,12 +378,26 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
   }
 
   Widget buildActions() {
-    bool isMobile = context.width < changePoint;
     bool hasHistory = history != null && (history!.ep > 1 || history!.page > 1);
     bool hasUpdate = LocalFavoritesManager().hasNewUpdate(
       comic.id,
       comic.comicType,
     );
+
+    Widget buildMainButtonChild(IconData icon, String text) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      );
+    }
+
     return SliverLazyToBoxAdapter(
       child: Column(
         children: [
@@ -396,27 +405,6 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
             children: [
-              if (hasHistory && !isMobile)
-                _ActionButton(
-                  icon: const Icon(Icons.menu_book),
-                  text: 'Continue'.tl,
-                  onPressed: continueRead,
-                  iconColor: context.useTextColor(Colors.yellow),
-                ),
-              if (!isMobile || hasHistory)
-                _ActionButton(
-                  icon: const Icon(Icons.play_circle_outline),
-                  text: 'Start'.tl,
-                  onPressed: read,
-                  iconColor: context.useTextColor(Colors.orange),
-                ),
-              if (!isMobile && !isDownloaded)
-                _ActionButton(
-                  icon: const Icon(Icons.download),
-                  text: 'Download'.tl,
-                  onPressed: download,
-                  iconColor: context.useTextColor(Colors.cyan),
-                ),
               if (data!.isLiked != null)
                 _ActionButton(
                   icon: const Icon(Icons.favorite_border),
@@ -455,26 +443,43 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
               ),
             ],
           ).fixHeight(48),
-          if (isMobile)
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.tonal(
-                    onPressed: download,
-                    child: Text("Download".tl),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonal(
+                      onPressed: download,
+                      child: buildMainButtonChild(
+                        Icons.download,
+                        "Download".tl,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: hasHistory
-                      ? FilledButton(
-                          onPressed: continueRead,
-                          child: Text("Continue".tl),
-                        )
-                      : FilledButton(onPressed: read, child: Text("Read".tl)),
-                ),
-              ],
-            ).paddingHorizontal(16).paddingVertical(8),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: hasHistory
+                        ? FilledButton(
+                            onPressed: continueRead,
+                            child: buildMainButtonChild(
+                              Icons.menu_book,
+                              "Continue".tl,
+                            ),
+                          )
+                        : FilledButton(
+                            onPressed: read,
+                            child: buildMainButtonChild(
+                              Icons.play_circle_outline,
+                              "Read".tl,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ).paddingHorizontal(16).paddingVertical(8),
           if (hasUpdate)
             _StatusPill(
               icon: Icons.update,
