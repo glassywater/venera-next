@@ -214,20 +214,13 @@ jobs:
           dart pub global activate -s git https://github.com/venera-app/flutter_to_debian.git
       - run: python3 debian/build.py x64
       - name: Build Arch package
-        run: |
-          APP_VERSION=$(sed -n 's/^version:[[:space:]]*//p' pubspec.yaml | tr -d '\r\n')
-          ARCH_VERSION="${APP_VERSION%%+*}"
-          ARCH_BUILD="${APP_VERSION#*+}"
-          ARCH_VERSION="${ARCH_VERSION//-/_}"
-          cp pubspec.yaml pubspec.yaml.release
-          trap 'mv pubspec.yaml.release pubspec.yaml' EXIT
-          sed -i "s/^version:.*/version: ${ARCH_VERSION}+${ARCH_BUILD}/" pubspec.yaml
-          dart run flutter_to_arch
+        run: python3 .github/scripts/build_arch_package.py
       - run: |
           sudo rm -rf build/linux/arch/app.tar.gz
           sudo rm -rf build/linux/arch/pkg
           sudo rm -rf build/linux/arch/src
           sudo rm -rf build/linux/arch/PKGBUILD
+          sudo rm -rf build/linux/arch/Dockerfile
           rm -f build/linux/arch/venera-next-debug-*.pkg.tar.zst
       - uses: actions/upload-artifact@v5
         with:
