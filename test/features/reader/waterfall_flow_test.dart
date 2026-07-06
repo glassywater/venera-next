@@ -71,6 +71,19 @@ void main() {
       expect(flow.imageRefAt(5)!.page, 1);
     });
 
+    test(
+      'keeps current chapter addressable after previous chapter is inserted',
+      () {
+        final flow = WaterfallChapterFlow(segments: [segment(98, 3)]);
+
+        final insertedCount = flow.addBefore(segment(97, 5));
+        final shiftedCurrentIndex = 1 + insertedCount;
+
+        expect(flow.imageRefAt(shiftedCurrentIndex)!.chapter, 98);
+        expect(flow.imageRefAt(shiftedCurrentIndex)!.page, 1);
+      },
+    );
+
     test('ignores duplicate chapters', () {
       final flow = WaterfallChapterFlow(segments: [segment(2, 2)]);
 

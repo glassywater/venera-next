@@ -718,6 +718,8 @@ class ContinuousModeState extends State<_ContinuousMode>
 
   bool _isLoadingPrevSegment = false;
 
+  bool _isRestoringPrependedSegmentPosition = false;
+
   String? _nextSegmentError;
 
   int get preCacheCount => appdata.settings["preloadImageCount"];
@@ -852,13 +854,13 @@ class ContinuousModeState extends State<_ContinuousMode>
         1;
     if (prevChapter < 1) return;
     _isLoadingPrevSegment = true;
-    var loadedCount = 0;
+    var insertedCount = 0;
     try {
       var images = await _loadChapterImages(prevChapter);
-      loadedCount = images.length;
       if (!mounted) return;
+      _isRestoringPrependedSegmentPosition = true;
       setState(() {
-        _waterfallFlow.addBefore(
+        insertedCount = _waterfallFlow.addBefore(
           WaterfallChapterSegment(
             chapter: prevChapter,
             eid:
@@ -868,7 +870,11 @@ class ContinuousModeState extends State<_ContinuousMode>
           ),
         );
       });
+      if (insertedCount == 0) {
+        _isRestoringPrependedSegmentPosition = false;
+      }
     } catch (e) {
+      _isRestoringPrependedSegmentPosition = false;
       if (!mounted) return;
       Log.error("Reader", "Failed to load previous chapter", e);
     } finally {
@@ -876,10 +882,15 @@ class ContinuousModeState extends State<_ContinuousMode>
       if (mounted) {
         setState(() {});
       }
-      if (mounted && loadedCount > 0) {
+      if (mounted && insertedCount > 0) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            itemScrollController.jumpTo(index: current + loadedCount);
+            itemScrollController.jumpTo(index: current + insertedCount);
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _isRestoringPrependedSegmentPosition = false;
+              }
+            });
           }
         });
       }
@@ -927,6 +938,7 @@ class ContinuousModeState extends State<_ContinuousMode>
     var imageRef = _imageRefAt(page);
     if (imageRef == null) return;
     if (crossChapter) {
+      if (_isRestoringPrependedSegmentPosition) return;
       _setReaderLocation(imageRef);
       context.readerScaffold.update();
     } else if (page != reader.page) {
