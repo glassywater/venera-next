@@ -8,7 +8,9 @@ import 'package:venera_next/features/comic_source/comic_source.dart';
 import 'package:venera_next/features/settings/setting_components.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class ExploreSettings extends StatefulWidget {
   const ExploreSettings({super.key});

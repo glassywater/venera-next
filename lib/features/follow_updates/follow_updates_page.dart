@@ -9,11 +9,13 @@ import 'package:venera_next/components/select.dart';
 import 'package:venera_next/features/comic_widgets/comic_widgets.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/features/favorites/favorites.dart';
 import 'package:venera_next/features/comic_details/comic_details.dart';
 import 'package:venera_next/features/sync/sync.dart';
 import 'package:venera_next/foundation/translations.dart';
 import 'package:venera_next/foundation/global_state.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 import 'package:venera_next/features/follow_updates/follow_updates_manager.dart';
 
 class FollowUpdatesWidget extends StatefulWidget {

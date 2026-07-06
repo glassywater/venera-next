@@ -6,7 +6,9 @@ import 'package:venera_next/components/pop_up_widget.dart';
 import 'package:venera_next/components/select.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class SwitchSetting extends StatefulWidget {
   const SwitchSetting({

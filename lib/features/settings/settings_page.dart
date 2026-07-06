@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:venera_next/components/gesture.dart';
-import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 import 'package:venera_next/features/settings/about.dart';
 import 'package:venera_next/features/settings/appearance.dart';
 import 'package:venera_next/features/settings/local_favorites.dart';

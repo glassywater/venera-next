@@ -5,9 +5,10 @@ import 'package:venera_next/components/rich_comment_content.dart';
 import 'package:venera_next/features/comic_details/action_button.dart';
 import 'package:venera_next/features/comic_details/comments_page.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
-import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/image_provider/cached_image.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class ComicCommentsPreview extends StatefulWidget {
   const ComicCommentsPreview({

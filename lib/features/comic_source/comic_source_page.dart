@@ -14,6 +14,7 @@ import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
 import 'package:venera_next/features/comic_source/comic_source_manager.dart';
 import 'package:venera_next/features/comic_source/source.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/log.dart';
 import 'package:venera_next/network/app_dio.dart';
 import 'package:venera_next/network/cookie_jar.dart';
@@ -21,6 +22,7 @@ import 'package:venera_next/routing/webview.dart';
 import 'package:venera_next/foundation/extensions.dart';
 import 'package:venera_next/foundation/file_interaction.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 import 'parser.dart';
 import 'source_translation.dart';

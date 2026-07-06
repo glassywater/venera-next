@@ -4,9 +4,10 @@ import 'package:venera_next/components/scroll.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
 import 'package:venera_next/features/settings/logs.dart';
 import 'package:venera_next/features/settings/setting_components.dart';
-import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/js_engine.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});

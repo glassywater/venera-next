@@ -4,10 +4,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:venera_next/components/effects.dart';
-import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/file_interaction.dart';
 import 'package:venera_next/foundation/file_type.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class ComicCoverViewer extends StatefulWidget {
   const ComicCoverViewer({

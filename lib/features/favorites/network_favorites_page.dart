@@ -13,8 +13,10 @@ import 'package:venera_next/features/favorites/favorite_actions.dart';
 import 'package:venera_next/features/favorites/favorites_constants.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/res.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 import 'package:venera_next/network/cache.dart';
 
 Future<bool> _deleteComic(

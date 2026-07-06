@@ -1,15 +1,43 @@
-part of 'reader.dart';
+import 'dart:async';
 
-class _ReaderScaffold extends StatefulWidget {
-  const _ReaderScaffold({required this.child});
+import 'package:battery_plus/battery_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:venera_next/components/custom_slider.dart';
+import 'package:venera_next/components/effects.dart';
+import 'package:venera_next/components/gesture.dart';
+import 'package:venera_next/components/message.dart';
+import 'package:venera_next/components/side_bar.dart';
+import 'package:venera_next/features/comic_source/comic_source.dart';
+import 'package:venera_next/features/history/history.dart';
+import 'package:venera_next/features/reader/chapter_comments.dart';
+import 'package:venera_next/features/reader/chapters.dart';
+import 'package:venera_next/features/reader/gesture.dart';
+import 'package:venera_next/features/reader/images.dart';
+import 'package:venera_next/features/reader/reader_page.dart';
+import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/cache_manager.dart';
+import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/extensions.dart';
+import 'package:venera_next/foundation/file_interaction.dart';
+import 'package:venera_next/foundation/file_type.dart';
+import 'package:venera_next/foundation/log.dart';
+import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
+import 'package:venera_next/routing/settings.dart';
+
+class ReaderScaffold extends StatefulWidget {
+  const ReaderScaffold({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<_ReaderScaffold> createState() => _ReaderScaffoldState();
+  State<ReaderScaffold> createState() => ReaderScaffoldState();
 }
 
-class _ReaderScaffoldState extends State<_ReaderScaffold> {
+class ReaderScaffoldState extends State<ReaderScaffold> {
   bool _isOpen = false;
 
   static const kTopBarHeight = 56.0;
@@ -26,7 +54,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
 
   var lastValue = 0;
 
-  _ReaderGestureDetectorState? _gestureDetectorState;
+  ReaderGestureDetectorState? gestureDetectorState;
 
   void setFloatingButton(int value) {
     lastValue = showFloatingButtonValue;
@@ -45,7 +73,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     }
   }
 
-  _DragListener? _imageFavoriteDragListener;
+  ReaderDragListener? _imageFavoriteDragListener;
 
   void addDragListener() async {
     if (!mounted) return;
@@ -55,7 +83,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
     if (appdata.settings['quickCollectImage'] == 'Swipe') {
       if (_imageFavoriteDragListener == null) {
         double distance = 0;
-        _imageFavoriteDragListener = _DragListener(
+        _imageFavoriteDragListener = ReaderDragListener(
           onMove: (offset) {
             switch (readerMode) {
               case ReaderMode.continuousTopToBottom:
@@ -77,9 +105,9 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           },
         );
       }
-      _gestureDetectorState!.addDragListener(_imageFavoriteDragListener!);
+      gestureDetectorState!.addDragListener(_imageFavoriteDragListener!);
     } else if (_imageFavoriteDragListener != null) {
-      _gestureDetectorState!.removeDragListener(_imageFavoriteDragListener!);
+      gestureDetectorState!.removeDragListener(_imageFavoriteDragListener!);
     }
   }
 
@@ -136,10 +164,10 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
             child: widget.child,
           ),
         ),
-        if (appdata.settings['showPageNumberInReader'] == true && !isOnChapterCommentsPage)
+        if (appdata.settings['showPageNumberInReader'] == true &&
+            !isOnChapterCommentsPage)
           buildPageInfoText(),
-        if (!isOnChapterCommentsPage)
-          buildStatusInfo(),
+        if (!isOnChapterCommentsPage) buildStatusInfo(),
         AnimatedPositioned(
           duration: const Duration(milliseconds: 180),
           right: 16,
@@ -168,10 +196,9 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   Widget buildTop() {
-    final epName =
-      context.reader.widget.chapters?.titles.elementAtOrNull(
-        context.reader.chapter - 1,
-      );
+    final epName = context.reader.widget.chapters?.titles.elementAtOrNull(
+      context.reader.chapter - 1,
+    );
 
     return BlurEffect(
       child: Container(
@@ -179,10 +206,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
         decoration: BoxDecoration(
           color: context.colorScheme.surface.toOpacity(0.92),
           border: Border(
-            bottom: BorderSide(
-              color: Colors.grey.toOpacity(0.5),
-              width: 0.5,
-            ),
+            bottom: BorderSide(color: Colors.grey.toOpacity(0.5), width: 0.5),
           ),
         ),
         child: Padding(
@@ -196,29 +220,31 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
               const BackButton(),
               const SizedBox(width: 8),
               Expanded(
-                child: epName == null ? Text(
-                  context.reader.widget.name,
-                  style: ts.s18,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ) : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      context.reader.widget.name,
-                      style: ts.s16,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      epName,
-                      style: ts.s12,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                child: epName == null
+                    ? Text(
+                        context.reader.widget.name,
+                        style: ts.s18,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            context.reader.widget.name,
+                            style: ts.s16,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            epName,
+                            style: ts.s12,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
               ),
               const SizedBox(width: 8),
               if (shouldShowChapterComments())
@@ -541,10 +567,11 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
                   for (var button in buttons)
                     if (!small)
                       button.paddingHorizontal(4)
-                    else
-                      ...[button, const Spacer()],
-                  if (!small)
-                    const SizedBox(width: 4),
+                    else ...[
+                      button,
+                      const Spacer(),
+                    ],
+                  if (!small) const SizedBox(width: 4),
                 ],
               );
             },
@@ -587,9 +614,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
       focusNode: sliderFocus,
       value: displayPage.toDouble(),
       min: 1,
-      max: context.reader.maxPage
-          .clamp(displayPage, 1 << 16)
-          .toDouble(),
+      max: context.reader.maxPage.clamp(displayPage, 1 << 16).toDouble(),
       reversed: isReversed,
       divisions: (context.reader.maxPage - 1).clamp(2, 1 << 16),
       onChanged: (i) {
@@ -654,8 +679,8 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   void openChapterDrawer() {
     _openSideBar(
       context.reader.widget.chapters!.isGrouped
-          ? _GroupedChaptersView(context.reader)
-          : _ChaptersView(context.reader),
+          ? ReaderGroupedChaptersView(context.reader)
+          : ReaderChaptersView(context.reader),
       width: 400,
     );
   }
@@ -715,7 +740,8 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           if (key == "quickCollectImage") {
             addDragListener();
           }
-          if (key == "showChapterComments" || key == "showChapterCommentsAtEnd") {
+          if (key == "showChapterComments" ||
+              key == "showChapterCommentsAtEnd") {
             update();
           }
           context.reader.update();
@@ -726,7 +752,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   }
 
   void _openSideBar(Widget widget, {double width = 400}) {
-    _gestureDetectorState?.ignoreNextTap();
+    gestureDetectorState?.ignoreNextTap();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       showSideBar(
@@ -735,7 +761,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
         width: width,
         dismissible: true,
       ).whenComplete(() {
-        _gestureDetectorState?.clearIgnoreNextTap();
+        gestureDetectorState?.clearIgnoreNextTap();
       });
     });
   }
@@ -824,10 +850,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
               borderRadius: BorderRadius.circular(16),
               child: Center(
                 child: Icon(
-                  _getArrowIcon(
-                    isReversed,
-                    showFloatingButtonValue,
-                  ),
+                  _getArrowIcon(isReversed, showFloatingButtonValue),
                   size: 24,
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
@@ -841,9 +864,13 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
 
   IconData _getArrowIcon(bool reversed, int value) {
     if (reversed) {
-      return value == 1 ? Icons.arrow_back_ios_outlined : Icons.arrow_forward_ios;
+      return value == 1
+          ? Icons.arrow_back_ios_outlined
+          : Icons.arrow_forward_ios;
     } else {
-      return value == 1 ? Icons.arrow_forward_ios : Icons.arrow_back_ios_outlined;
+      return value == 1
+          ? Icons.arrow_forward_ios
+          : Icons.arrow_back_ios_outlined;
     }
   }
 
@@ -855,12 +882,12 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
   /// The return value is the index of the selected image.
   Future<int?> selectImage() async {
     var reader = context.reader;
-    var imageViewController = context.reader._imageViewController;
+    var imageViewController = context.reader.imageViewController;
 
     bool needsSelection = false;
     int? singleImageIndex;
 
-    if (imageViewController is _GalleryModeState) {
+    if (imageViewController is GalleryModeState) {
       var range = imageViewController.getCurrentPageImageRange();
       if (range != null) {
         var (startIndex, endIndex) = range;
@@ -872,7 +899,7 @@ class _ReaderScaffoldState extends State<_ReaderScaffold> {
           needsSelection = true;
         }
       }
-    } else if (imageViewController is _ContinuousModeState) {
+    } else if (imageViewController is ContinuousModeState) {
       needsSelection = false;
       singleImageIndex = reader.page - 1;
     }

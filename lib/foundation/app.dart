@@ -9,9 +9,6 @@ import 'package:yaml/yaml.dart';
 
 import 'appdata.dart';
 
-export "widget_utils.dart";
-export "context.dart";
-
 class _App {
   String version = "0.0.0";
 

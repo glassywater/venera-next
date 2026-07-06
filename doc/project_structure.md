@@ -10,6 +10,8 @@
 - 不再新增 `pages/` 目录；应用级入口放入 `app_shell/`，业务页面放入对应 `features/<domain>/`。
 - `foundation/` 放跨业务域的应用基础能力，例如应用状态、初始化协议、异步队列、通用 Dart 扩展、常量、日志、本地化、中文转换、文件系统基础工具、文件类型识别、平台文件交互、节流任务调度、图片处理、图片 provider 基类、平台连接和通用数据基建。
 - `components/` 放可跨页面复用的 UI 组件。若组件只服务某个业务域，应放回对应的 `features/<domain>/`。
+- `foundation/app.dart` 只作为 `App` 单例入口，不再 re-export `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- 任何文件若使用 BuildContext、Widget、TextStyle 或 Color 扩展，应显式引用实际使用的 `foundation/context.dart` 或 `foundation/widget_utils.dart`，避免把应用状态入口当作 UI 扩展桶。
 - `utils/` 已进入退场状态，不再作为新增工具的默认目录。新增工具应先判断归属：跨功能域基础能力放入 `foundation/`，带明确业务语义的工具放入对应功能域。
 - 文件路径、文件名清洗、目录复制、文件系统扩展和大小格式化等基础文件能力应直接引用 `foundation/file_system.dart`，避免通过平台文件交互入口绕行。
 - 文件选择、目录选择、文件保存、分享和 Android SAF IO override 等平台文件交互应归入 `foundation/file_interaction.dart`；`utils/io.dart` 已退场，不再作为导出入口。
@@ -31,7 +33,7 @@
 - `image_favorites/`：图片收藏页面、首页摘要、图库浏览和图片查看 UI。
 - `local_comics/`：本地漫画库管理、首页本地漫画摘要、下载任务，以及 `import_export/` 下的 CBZ、EPUB、PDF、导入导出工具。
 - `reader/`：阅读器页面、手势、章节、图片加载、瀑布流阅读实现，以及图片剪贴板写入、音量键监听等阅读场景专用平台交互。
-- `search/`：首页搜索入口、搜索首页、搜索结果页和聚合搜索页面。
+- `search/`：首页搜索入口、搜索首页、搜索结果页、聚合搜索页面和搜索查询过滤规则。
 - `settings/`：设置页面、阅读设置、设置页共享控件和各业务域的页面选择设置。
 - `sync/`：WebDAV 数据同步、首页同步状态、应用数据导入导出和本地漫画备份恢复。
 
@@ -48,7 +50,7 @@ test/features/<domain>/
 
 不是每个功能域都必须同时有数据层和页面层；目录边界应以业务归属为准。
 
-外部模块应优先通过功能域入口引用能力，而不是直接依赖功能域内部实现文件。已经建立稳定入口的功能域，应在入口文件中 export 对外类型；例如漫画源功能通过 `features/comic_source/comic_source.dart` 暴露漫画源模型、服务、首页摘要、标签翻译和管理页面，漫画详情页通过 `features/comic_details/comic_details.dart` 暴露 `ComicPage`，浏览发现功能通过 `features/discovery/discovery.dart` 暴露探索页、分类页、分类漫画列表和排行榜，收藏功能通过 `features/favorites/favorites.dart` 暴露收藏管理器和收藏页面，追更功能通过 `features/follow_updates/follow_updates.dart` 暴露追更服务和追更页面，历史功能通过 `features/history/history.dart` 暴露历史管理器、首页摘要、图片收藏 provider 和历史页面，图片收藏功能通过 `features/image_favorites/image_favorites.dart` 暴露图片收藏页面、首页摘要和排序类型，阅读器通过 `features/reader/reader.dart` 暴露阅读页面和瀑布流模型，搜索功能通过 `features/search/search.dart` 暴露首页搜索入口、搜索首页、搜索结果页和聚合搜索页，设置功能通过 `features/settings/settings.dart` 暴露设置页、应用设置、探索设置、阅读器设置、外观设置、本地收藏设置、网络设置、日志页、调试页、关于页、更新日志和可复用设置面板，同步功能通过 `features/sync/sync.dart` 暴露数据同步、首页同步状态、数据迁移、漫画备份和漫画归档页面，本地漫画通过 `features/local_comics/local_comics.dart` 暴露本地库、首页摘要、下载任务、本地漫画页面和下载队列弹窗，本地漫画导入导出通过 `features/local_comics/import_export/import_export.dart` 暴露格式工具。外部页面、路由和测试不应绕过这些入口直接 import 内部实现文件。
+外部模块应优先通过功能域入口引用能力，而不是直接依赖功能域内部实现文件。已经建立稳定入口的功能域，应在入口文件中 export 对外类型；例如漫画源功能通过 `features/comic_source/comic_source.dart` 暴露漫画源模型、服务、首页摘要、标签翻译和管理页面，漫画详情页通过 `features/comic_details/comic_details.dart` 暴露 `ComicPage`，浏览发现功能通过 `features/discovery/discovery.dart` 暴露探索页、分类页、分类漫画列表和排行榜，收藏功能通过 `features/favorites/favorites.dart` 暴露收藏管理器和收藏页面，追更功能通过 `features/follow_updates/follow_updates.dart` 暴露追更服务和追更页面，历史功能通过 `features/history/history.dart` 暴露历史管理器、首页摘要、图片收藏 provider 和历史页面，图片收藏功能通过 `features/image_favorites/image_favorites.dart` 暴露图片收藏页面、首页摘要和排序类型，阅读器通过 `features/reader/reader.dart` 暴露阅读页面、加载入口、章节评论页和瀑布流模型，搜索功能通过 `features/search/search.dart` 暴露首页搜索入口、搜索首页、搜索结果页、聚合搜索页和搜索查询过滤规则，设置功能通过 `features/settings/settings.dart` 暴露设置页、应用设置、探索设置、阅读器设置、外观设置、本地收藏设置、网络设置、日志页、调试页、关于页、更新日志和可复用设置面板，同步功能通过 `features/sync/sync.dart` 暴露数据同步、首页同步状态、数据迁移、漫画备份和漫画归档页面，本地漫画通过 `features/local_comics/local_comics.dart` 暴露本地库、首页摘要、下载任务、本地漫画页面和下载队列弹窗，本地漫画导入导出通过 `features/local_comics/import_export/import_export.dart` 暴露格式工具。外部页面、路由和测试不应绕过这些入口直接 import 内部实现文件。
 
 ## `lib/app_shell`
 
@@ -113,6 +115,18 @@ test/features/<domain>/
 - `features/`、`routing/`、`foundation/`、`network/`、`utils/`、`components/` 反向依赖 `app_shell/`。
 - `app_shell/`、`features/`、`routing/`、`foundation/`、`network/`、`utils/`、`components/` 反向依赖 `app_runtime/`。
 - `foundation/`、`network/`、`utils/`、`components/` 依赖 `features/` 或 `pages/`。
+- `foundation/app.dart` 重新 export `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `components/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `components/` 中使用 BuildContext UI 扩展、Widget/TextStyle/Color helper 却未显式引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/comic_details/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/comic_source/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/discovery/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/history/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/local_comics/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/reader/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/search/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/settings/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
+- `features/sync/` 中未使用 `App` 单例的文件通过 `foundation/app.dart` 间接引用 UI 扩展；应直接引用 `foundation/context.dart` 或 `foundation/widget_utils.dart`。
 - `features/<domain>/` 依赖 `pages/`。
 - 外部 `lib/` 代码绕过 `app_shell/app_shell.dart` 直接依赖应用壳层内部页面。
 - 外部 `lib/` 代码绕过 `app_runtime/app_runtime.dart` 直接依赖运行时组装内部文件。
@@ -132,8 +146,10 @@ test/features/<domain>/
 - 设置功能中的阅读器设置绕过 `features/settings/settings.dart` 稳定入口，或 `settings_page.dart` 重新声明 part library。
 
 浏览发现页面已经纳入稳定入口约束，外部代码应通过 `features/discovery/discovery.dart` 引用探索页、分类页、分类漫画列表和排行榜。
+浏览发现功能内部的分类漫画页和排行榜页不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的发现页实现文件保留该入口。
 
 设置页面已经纳入稳定入口约束，外部代码应通过 `features/settings/settings.dart` 引用设置页、阅读设置和页面选择设置面板。
+设置功能内部的本地收藏设置、调试页、日志页和设置入口页不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的设置实现文件保留该入口。
 
 图片收藏页面和首页摘要已经纳入稳定入口约束，外部代码应通过 `features/image_favorites/image_favorites.dart` 引用图片收藏 UI。
 图片收藏功能内部的图片查看页应保持独立实现文件，不应重新作为 `image_favorites_page.dart` 的 part。
@@ -141,14 +157,19 @@ test/features/<domain>/
 图片收藏功能内部的条目组件应保持独立实现文件，不应重新作为 `image_favorites_page.dart` 的 part。
 
 同步状态首页卡片已经纳入稳定入口约束，外部代码应通过 `features/sync/sync.dart` 引用同步 UI。
+同步功能内部的漫画归档页不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的同步实现文件保留该入口。
 
 本地漫画页面、下载队列和首页摘要已经纳入稳定入口约束，外部代码应通过 `features/local_comics/local_comics.dart` 引用本地漫画 UI。
+本地漫画下载队列弹窗不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的本地漫画实现文件保留该入口。
 
 漫画源管理页面、首页摘要和标签翻译已经纳入稳定入口约束，外部代码应通过 `features/comic_source/comic_source.dart` 引用漫画源能力。
+漫画源首页摘要不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的漫画源实现文件保留该入口。
 
 历史页面和首页摘要已经纳入稳定入口约束，外部代码应通过 `features/history/history.dart` 引用历史 UI。
+历史首页摘要不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的历史实现文件保留该入口。
 
-搜索页面和首页入口已经纳入稳定入口约束，外部代码应通过 `features/search/search.dart` 引用搜索 UI。
+搜索页面、首页入口和搜索查询过滤规则已经纳入稳定入口约束，外部代码应通过 `features/search/search.dart` 引用搜索能力。
+搜索功能内部的聚合搜索页不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的搜索实现文件保留该入口。
 
 漫画展示组件已经纳入稳定入口约束，外部代码应通过 `features/comic_widgets/comic_widgets.dart` 引用漫画列表、卡片、评分控件和后续拆出的展示组件。
 
@@ -159,6 +180,7 @@ test/features/<domain>/
 
 漫画详情功能内部的封面查看页应保持独立实现文件，不应重新作为 `comic_page.dart` 的 part。
 漫画详情功能内部的评论页应保持独立实现文件，不应重新作为 `comic_page.dart` 的 part。
+漫画详情功能内部的操作按钮、章节列表、评论页、封面查看、评论预览和缩略图不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的详情实现文件保留该入口。
 漫画详情功能内部的操作按钮组件应保持独立实现文件，外部代码不应绕过 `features/comic_details/comic_details.dart` 直接依赖。
 漫画详情功能内部的评论预览组件应保持独立实现文件，不应重新作为 `comic_page.dart` 的 part。
 漫画详情功能内部的缩略图预览组件应保持独立实现文件，不应重新作为 `comic_page.dart` 的 part。
@@ -177,5 +199,9 @@ test/features/<domain>/
 漫画源功能内部的主类和源配置数据应保持独立实现文件，并通过注册表回调连接漫画源管理器。
 漫画源功能内部的解析器应保持独立实现文件，并通过类型桥接和 JS 数据桥接注册函数连接运行环境。
 阅读器功能内部的章节评论页应保持独立实现文件，并通过 `features/reader/reader.dart` 稳定入口向外暴露。
+阅读器章节评论页不应通过 `foundation/app.dart` 间接引用 UI 扩展；仅实际访问 `App` 单例的阅读器实现文件保留该入口。
+阅读器功能入口 `reader.dart` 应保持 export-only，不应重新声明 part library。
+阅读器主实现 `reader_page.dart`、脚手架、图片视图、手势、漫画图片组件、加载入口和章节列表应保持普通 Dart 实现文件，不应重新作为 `reader.dart` 或 `reader_page.dart` 的 part。
+阅读器功能外部代码应通过 `features/reader/reader.dart` 引用阅读页面、加载入口、章节评论页和瀑布流模型，不应直接依赖 reader 内部实现文件。
 
 当前不再保留过渡例外；发现受限 import/export 时应通过移动代码、抽出回调或增加 `routing/` 薄适配层来恢复依赖方向。

@@ -5,8 +5,8 @@ import 'package:venera_next/components/gesture.dart';
 import 'package:venera_next/components/image.dart';
 import 'package:venera_next/components/loading.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
-import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/image_provider/cached_image.dart';
 import 'package:venera_next/foundation/translations.dart';
 

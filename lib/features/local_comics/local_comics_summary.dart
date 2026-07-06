@@ -10,7 +10,9 @@ import 'package:venera_next/features/comic_widgets/comic_widgets.dart';
 import 'package:venera_next/features/favorites/favorites.dart';
 import 'package:venera_next/features/sync/sync.dart';
 import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 import 'downloading_page.dart';
 import 'import_export/import_export.dart';

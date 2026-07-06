@@ -8,6 +8,7 @@ import 'package:venera_next/foundation/translations.dart';
 
 import '../components/navigation_bar.dart';
 import '../foundation/app.dart';
+import '../foundation/context.dart';
 import 'home_page.dart';
 
 class MainPage extends StatefulWidget {

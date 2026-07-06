@@ -1,4 +1,10 @@
-part of 'reader.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:venera_next/features/reader/gesture.dart';
+import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/global_state.dart';
+import 'package:venera_next/foundation/translations.dart';
 
 class ComicImage extends StatefulWidget {
   /// Modified from flutter Image
@@ -66,13 +72,13 @@ class ComicImage extends StatefulWidget {
 
   final void Function(State<ComicImage> state)? onDispose;
 
-  static void clear() => _ComicImageState.clear();
+  static void clear() => ComicImageState.clear();
 
   @override
-  State<ComicImage> createState() => _ComicImageState();
+  State<ComicImage> createState() => ComicImageState();
 }
 
-class _ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
+class ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
   ImageStream? _imageStream;
   ImageInfo? _imageInfo;
   ImageChunkEvent? _loadingProgress;
@@ -304,7 +310,7 @@ class _ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
                   cursor: SystemMouseCursors.click,
                   child: Listener(
                     onPointerDown: (details) {
-                      GlobalState.find<_ReaderGestureDetectorState>()
+                      GlobalState.find<ReaderGestureDetectorState>()
                           .ignoreNextTap();
                       setState(() {
                         _loadingProgress = null;
@@ -432,15 +438,15 @@ class _ComicImageState extends State<ComicImage> with WidgetsBindingObserver {
   }
 
   @override
-  void debugFillProperties(DiagnosticPropertiesBuilder description) {
-    super.debugFillProperties(description);
-    description.add(DiagnosticsProperty<ImageStream>('stream', _imageStream));
-    description.add(DiagnosticsProperty<ImageInfo>('pixels', _imageInfo));
-    description.add(
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<ImageStream>('stream', _imageStream));
+    properties.add(DiagnosticsProperty<ImageInfo>('pixels', _imageInfo));
+    properties.add(
       DiagnosticsProperty<ImageChunkEvent>('loadingProgress', _loadingProgress),
     );
-    description.add(DiagnosticsProperty<int>('frameNumber', _frameNumber));
-    description.add(
+    properties.add(DiagnosticsProperty<int>('frameNumber', _frameNumber));
+    properties.add(
       DiagnosticsProperty<bool>(
         'wasSynchronouslyLoaded',
         _wasSynchronouslyLoaded,

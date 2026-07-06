@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/features/search/search.dart';
 
 bool _isHandling = false;

@@ -10,6 +10,18 @@
 - 按功能域重整仓库结构，收拢 `app_shell`、`app_runtime`、`features`、`routing`、`foundation`、`components`、`network` 与测试目录的职责边界。
 - 将旧 `pages` 和 `utils` 中的业务页面、平台适配、文件能力、图片处理、初始化协议、并发原语和文本转换能力迁入对应功能域或基础层。
 - 为漫画详情、漫画源、阅读器、收藏、图片收藏、设置、同步、本地漫画、搜索、浏览发现和漫画展示组件建立稳定入口，并逐步拆除历史 `part` library。
+- 拆除阅读器剩余 `part` library，将阅读器主实现、脚手架、图片视图、手势、加载入口和章节列表改为普通 Dart 实现文件。
+- 将搜索自动语言过滤规则从搜索结果页抽出为搜索功能域逻辑，并通过 `features/search/search.dart` 稳定入口暴露。
+- 收窄组件层对 `foundation/app.dart` 的依赖，未使用 `App` 单例的组件改为直接引用 UI 扩展入口。
+- 收窄阅读器章节评论页对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄聚合搜索页对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄浏览发现分类漫画页和排行榜页对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄首页历史摘要对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄本地漫画下载队列弹窗对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄漫画详情操作按钮、章节列表、评论页、封面查看、评论预览和缩略图对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄设置页入口、本地收藏设置、调试页和日志页对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 收窄漫画源首页摘要和同步漫画归档页对 `foundation/app.dart` 的依赖，改为直接引用 UI 扩展入口。
+- 将 `foundation/app.dart` 收窄为 `App` 单例入口，移除 UI 扩展 re-export，并为仍需使用 `App` 的调用点补齐显式 UI 扩展入口。
 - 新增项目结构约定文档和结构 import 边界检查，固化入口约束、退场目录和反向依赖规则，防止结构调整回退。
 
 ### 修复

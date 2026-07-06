@@ -1,18 +1,45 @@
-part of 'reader.dart';
+import 'dart:async';
+import 'dart:io';
+import 'dart:math' as math;
 
-class _ReaderImages extends StatefulWidget {
-  const _ReaderImages({super.key});
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:venera_next/components/gesture.dart';
+import 'package:venera_next/components/loading.dart';
+import 'package:venera_next/features/comic_source/comic_source.dart';
+import 'package:venera_next/features/local_comics/local_comics.dart';
+import 'package:venera_next/features/reader/chapter_comments.dart';
+import 'package:venera_next/features/reader/comic_image.dart';
+import 'package:venera_next/features/reader/reader_page.dart';
+import 'package:venera_next/features/reader/waterfall_flow.dart';
+import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/cache_manager.dart';
+import 'package:venera_next/foundation/comic_type.dart';
+import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/image_provider/reader_image.dart';
+import 'package:venera_next/foundation/log.dart';
+import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
+import 'package:venera_next/network/images.dart';
+
+class ReaderImages extends StatefulWidget {
+  const ReaderImages({super.key});
 
   @override
-  State<_ReaderImages> createState() => _ReaderImagesState();
+  State<ReaderImages> createState() => ReaderImagesState();
 }
 
-class _ReaderImagesState extends State<_ReaderImages> {
+class ReaderImagesState extends State<ReaderImages> {
   String? error;
 
   bool inProgress = false;
 
-  late _ReaderState reader;
+  late ReaderState reader;
 
   @override
   void initState() {
@@ -27,11 +54,11 @@ class _ReaderImagesState extends State<_ReaderImages> {
     ImageDownloader.cancelAllLoadingImages();
   }
 
-  /// Handle jumping to last page when _jumpToLastPageOnLoad is true
+  /// Handle jumping to last page when jumpToLastPageOnLoad is true
   void _handleJumpToLastPage() {
-    if (reader._jumpToLastPageOnLoad) {
-      reader._page = reader.maxPage;
-      reader._jumpToLastPageOnLoad = false;
+    if (reader.jumpToLastPageOnLoad) {
+      reader.pageValue = reader.maxPage;
+      reader.jumpToLastPageOnLoad = false;
     }
   }
 
@@ -151,18 +178,18 @@ class _GalleryMode extends StatefulWidget {
   const _GalleryMode({super.key});
 
   @override
-  State<_GalleryMode> createState() => _GalleryModeState();
+  State<_GalleryMode> createState() => GalleryModeState();
 }
 
-class _GalleryModeState extends State<_GalleryMode>
-    implements _ImageViewController {
+class GalleryModeState extends State<_GalleryMode>
+    implements ReaderImageViewController {
   late PageController controller;
 
   int get preCacheCount => appdata.settings["preloadImageCount"];
 
   var photoViewControllers = <int, PhotoViewController>{};
 
-  late _ReaderState reader;
+  late ReaderState reader;
 
   bool get showChapterCommentsAtEnd {
     if (reader.mode != ReaderMode.galleryLeftToRight &&
@@ -208,7 +235,7 @@ class _GalleryModeState extends State<_GalleryMode>
   void initState() {
     reader = context.reader;
     controller = PageController(initialPage: reader.page);
-    reader._imageViewController = this;
+    reader.imageViewController = this;
     Future.microtask(() {
       context.readerScaffold.setFloatingButton(0);
     });
@@ -634,7 +661,7 @@ class _GalleryModeState extends State<_GalleryMode>
     }
 
     for (var imageState in imageStates) {
-      if ((imageState as _ComicImageState).containsPoint(offset)) {
+      if ((imageState as ComicImageState).containsPoint(offset)) {
         var imageKey =
             (imageState.widget.image as ReaderImageProvider).imageKey;
         int index = reader.images!.indexOf(imageKey);
@@ -664,12 +691,12 @@ class _ContinuousMode extends StatefulWidget {
   final bool crossChapter;
 
   @override
-  State<_ContinuousMode> createState() => _ContinuousModeState();
+  State<_ContinuousMode> createState() => ContinuousModeState();
 }
 
-class _ContinuousModeState extends State<_ContinuousMode>
-    implements _ImageViewController {
-  late _ReaderState reader;
+class ContinuousModeState extends State<_ContinuousMode>
+    implements ReaderImageViewController {
+  late ReaderState reader;
 
   var itemScrollController = ItemScrollController();
   var itemPositionsListener = ItemPositionsListener.create();
@@ -874,7 +901,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
   @override
   void initState() {
     reader = context.reader;
-    reader._imageViewController = this;
+    reader.imageViewController = this;
     _initSegments();
     itemPositionsListener.itemPositions.addListener(onPositionChanged);
     cached = List.filled(reader.maxPage + 2, false);
@@ -1502,7 +1529,7 @@ class _ContinuousModeState extends State<_ContinuousMode>
   String? getImageKeyByOffset(Offset offset) {
     String? imageKey;
     for (var imageState in imageStates) {
-      if ((imageState as _ComicImageState).containsPoint(offset)) {
+      if ((imageState as ComicImageState).containsPoint(offset)) {
         imageKey = (imageState.widget.image as ReaderImageProvider).imageKey;
       }
     }

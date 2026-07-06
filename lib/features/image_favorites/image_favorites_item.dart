@@ -12,7 +12,9 @@ import 'package:venera_next/features/image_favorites/image_favorites_photo_view.
 import 'package:venera_next/features/reader/reader.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class ImageFavoritesItem extends StatefulWidget {
   const ImageFavoritesItem({

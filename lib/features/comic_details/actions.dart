@@ -17,8 +17,10 @@ import 'package:venera_next/features/local_comics/local_comics.dart';
 import 'package:venera_next/features/reader/reader.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/file_interaction.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 import 'package:venera_next/routing/page_jump_target.dart';
 
 abstract mixin class ComicPageActions {

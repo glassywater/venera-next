@@ -15,9 +15,11 @@ import 'package:venera_next/features/local_comics/local_comics.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
 import 'package:venera_next/foundation/comic_type.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/image_provider/cached_image.dart';
 import 'package:venera_next/foundation/extensions.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 import 'rating.dart';
 

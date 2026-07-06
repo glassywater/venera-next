@@ -21,6 +21,7 @@ import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
 import 'package:venera_next/foundation/comic_type.dart';
 import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/features/favorites/favorites.dart';
 import 'package:venera_next/features/history/history.dart';
 import 'package:venera_next/foundation/image_provider/cached_image.dart';
@@ -30,6 +31,7 @@ import 'package:venera_next/features/reader/reader.dart';
 import 'package:venera_next/foundation/file_type.dart';
 import 'package:venera_next/foundation/file_interaction.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 bool _isReadOnlyComicInfoNamespace(String namespace) {
   final key = namespace.trim().toLowerCase();

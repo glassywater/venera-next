@@ -5,11 +5,14 @@ import 'package:venera_next/components/select.dart';
 import 'package:venera_next/features/comic_widgets/comic_widgets.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
 import 'package:venera_next/foundation/global_state.dart';
 import 'package:venera_next/foundation/extensions.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
+import 'search_filter.dart';
 import 'search_page.dart';
 
 class SearchResultPage extends StatefulWidget {
@@ -48,7 +51,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
       if (suggestionsController.entry != null) {
         suggestionsController.remove();
       }
-      text = checkAutoLanguage(text);
+      text = _applyConfiguredLanguageFilter(text);
       setState(() {
         this.text = text!;
       });
@@ -94,27 +97,18 @@ class _SearchResultPageState extends State<SearchResultPage> {
     super.dispose();
   }
 
-  String checkAutoLanguage(String text) {
-    var setting = appdata.settings["autoAddLanguageFilter"] ?? 'none';
-    if (setting == 'none') {
-      return text;
-    }
-    var searchSource = sourceKey;
-    // TODO: Move it to a better place
-    const enabledSources = ['nhentai', 'ehentai'];
-    if (!enabledSources.contains(searchSource)) {
-      return text;
-    }
-    if (!text.contains('language:')) {
-      return '$text language:$setting';
-    }
-    return text;
+  String _applyConfiguredLanguageFilter(String text) {
+    return applySearchLanguageFilter(
+      text,
+      sourceKey: sourceKey,
+      setting: appdata.settings["autoAddLanguageFilter"] ?? 'none',
+    );
   }
 
   @override
   void initState() {
     sourceKey = widget.sourceKey;
-    text = checkAutoLanguage(widget.text);
+    text = _applyConfiguredLanguageFilter(widget.text);
     controller = SearchBarController(currentText: text, onSearch: search);
     options = widget.options ?? const [];
     validateOptions();
@@ -182,7 +176,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
           );
           if (!previousOptions.isEqualTo(options) ||
               previousSourceKey != sourceKey) {
-            text = checkAutoLanguage(controller.text);
+            text = _applyConfiguredLanguageFilter(controller.text);
             controller.currentText = text;
             setState(() {});
           }

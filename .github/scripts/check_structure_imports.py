@@ -7,7 +7,10 @@ ROOT = Path(__file__).resolve().parents[2]
 LIB_DIR = ROOT / "lib"
 COMPONENTS_DIR = LIB_DIR / "components"
 COMPONENTS_BARREL = COMPONENTS_DIR / "components.dart"
+FOUNDATION_APP_PATH = (LIB_DIR / "foundation" / "app.dart").resolve()
+FOUNDATION_CONTEXT_PATH = (LIB_DIR / "foundation" / "context.dart").resolve()
 FOUNDATION_EXTENSIONS_BARREL = LIB_DIR / "foundation" / "extensions.dart"
+FOUNDATION_WIDGET_UTILS_PATH = (LIB_DIR / "foundation" / "widget_utils.dart").resolve()
 PAGES_DIR = LIB_DIR / "pages"
 RETIRED_DART_PATHS = {
     LIB_DIR / "utils" / "tags_translation.dart": (
@@ -56,11 +59,29 @@ RETIRED_DART_DIRS = {
 }
 
 IMPORT_RE = re.compile(r"\b(?:import|export)\s+['\"]([^'\"]+)['\"]")
+EXPORT_RE = re.compile(r"\bexport\s+['\"]([^'\"]+)['\"]")
 PART_RE = re.compile(r"\bpart\s+['\"]([^'\"]+)['\"]")
 PART_OF_RE = re.compile(r"^\s*part\s+of\b", re.MULTILINE)
 SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
 COMPONENTS_PART_OF_RE = re.compile(
     r"^\s*part\s+of\s+['\"]components\.dart['\"]\s*;", re.MULTILINE
+)
+APP_SINGLETON_RE = re.compile(r"\bApp\b")
+CONTEXT_EXTENSION_RE = re.compile(
+    r"\bcontext\.(?:"
+    r"pop|canPop|to|toReplacement|width|height|padding|viewInsets|"
+    r"colorScheme|brightness|isDarkMode|showMessage|useBackgroundColor|"
+    r"useTextColor"
+    r")\b"
+)
+WIDGET_UTILS_RE = re.compile(
+    r"\bts\b|"
+    r"\.(?:"
+    r"padding|paddingLeft|paddingRight|paddingTop|paddingBottom|"
+    r"paddingVertical|paddingHorizontal|paddingAll|toCenter|toAlign|"
+    r"sliverPadding|sliverPaddingAll|sliverPaddingVertical|"
+    r"sliverPaddingHorizontal|fixWidth|fixHeight|toSliver|toOpacity"
+    r")\("
 )
 
 
@@ -138,6 +159,32 @@ RETIRED_PART_TARGETS = {
     _feature_path("reader", "reader.dart"): {
         "chapter_comments.dart": (
             "reader chapter comments page belongs in an independent reader "
+            "implementation file"
+        ),
+    },
+    _feature_path("reader", "reader_page.dart"): {
+        "scaffold.dart": (
+            "reader scaffold belongs in an independent reader implementation "
+            "file"
+        ),
+        "images.dart": (
+            "reader image views belong in an independent reader implementation "
+            "file"
+        ),
+        "gesture.dart": (
+            "reader gestures belong in an independent reader implementation "
+            "file"
+        ),
+        "comic_image.dart": (
+            "reader comic image widget belongs in an independent reader "
+            "implementation file"
+        ),
+        "loading.dart": (
+            "reader loading entry belongs in an independent reader "
+            "implementation file"
+        ),
+        "chapters.dart": (
+            "reader chapter list belongs in an independent reader "
             "implementation file"
         ),
     },
@@ -277,6 +324,14 @@ NO_PART_TARGETS = {
         "settings_page.dart must remain a normal settings implementation file; "
         "split settings sections into independent files instead"
     ),
+    _feature_path("reader", "reader.dart"): (
+        "reader.dart must remain an export-only reader entrypoint; split "
+        "reader implementation files instead"
+    ),
+    _feature_path("reader", "reader_page.dart"): (
+        "reader_page.dart must remain a normal reader implementation file; "
+        "split reader views and controls into independent files instead"
+    ),
 }
 
 RETIRED_PART_OF_PATHS = {
@@ -315,6 +370,24 @@ RETIRED_PART_OF_PATHS = {
     ),
     _feature_path("reader", "chapter_comments.dart"): (
         "reader chapter comments page must not be part of reader.dart"
+    ),
+    _feature_path("reader", "scaffold.dart"): (
+        "reader scaffold must not be part of reader_page.dart"
+    ),
+    _feature_path("reader", "images.dart"): (
+        "reader image views must not be part of reader_page.dart"
+    ),
+    _feature_path("reader", "gesture.dart"): (
+        "reader gestures must not be part of reader_page.dart"
+    ),
+    _feature_path("reader", "comic_image.dart"): (
+        "reader comic image widget must not be part of reader_page.dart"
+    ),
+    _feature_path("reader", "loading.dart"): (
+        "reader loading entry must not be part of reader_page.dart"
+    ),
+    _feature_path("reader", "chapters.dart"): (
+        "reader chapter list must not be part of reader_page.dart"
     ),
     _feature_path("comic_details", "cover_viewer.dart"): (
         "comic cover viewer must not be part of comic_page.dart"
@@ -654,6 +727,42 @@ FEATURE_ENTRYPOINT_TARGETS = {
         "reader",
         "reader.dart",
     ),
+    _feature_path("reader", "chapters.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "clipboard_image.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "comic_image.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "gesture.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "images.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "loading.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "reader_page.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "scaffold.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
+    _feature_path("reader", "volume.dart"): _feature_path(
+        "reader",
+        "reader.dart",
+    ),
     _feature_path("reader", "waterfall_flow.dart"): _feature_path(
         "reader",
         "reader.dart",
@@ -663,6 +772,10 @@ FEATURE_ENTRYPOINT_TARGETS = {
         "search.dart",
     ),
     _feature_path("search", "search_entry.dart"): _feature_path(
+        "search",
+        "search.dart",
+    ),
+    _feature_path("search", "search_filter.dart"): _feature_path(
         "search",
         "search.dart",
     ),
@@ -921,6 +1034,122 @@ def _scan_component_barrel_violations() -> set[str]:
     return violations
 
 
+def _scan_app_import_violations(directory: Path, label: str) -> set[str]:
+    violations = set()
+
+    for source in sorted(directory.rglob("*.dart")):
+        text = source.read_text(encoding="utf-8")
+        uses_app_singleton = APP_SINGLETON_RE.search(text) is not None
+        for match in IMPORT_RE.finditer(text):
+            target = _resolve_import(source, match.group(1))
+            if target != FOUNDATION_APP_PATH or uses_app_singleton:
+                continue
+            violations.add(
+                f"{_relative(source)}: {label} files should import "
+                "foundation/context.dart and foundation/widget_utils.dart "
+                "directly unless they use App"
+            )
+
+    return violations
+
+
+def _scan_component_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(COMPONENTS_DIR, "component")
+
+
+def _scan_foundation_app_reexport_violations() -> set[str]:
+    violations = set()
+    text = FOUNDATION_APP_PATH.read_text(encoding="utf-8")
+    forbidden_exports = {
+        FOUNDATION_CONTEXT_PATH: "foundation/context.dart",
+        FOUNDATION_WIDGET_UTILS_PATH: "foundation/widget_utils.dart",
+    }
+
+    for match in EXPORT_RE.finditer(text):
+        target = _resolve_import(FOUNDATION_APP_PATH, match.group(1))
+        if target in forbidden_exports:
+            violations.add(
+                f"{_relative(FOUNDATION_APP_PATH)}: foundation/app.dart must "
+                f"not re-export {forbidden_exports[target]}"
+            )
+
+    return violations
+
+
+def _scan_component_ui_import_violations() -> set[str]:
+    violations = set()
+
+    for source in sorted(COMPONENTS_DIR.glob("*.dart")):
+        text = source.read_text(encoding="utf-8")
+        imports = {
+            _resolve_import(source, match.group(1))
+            for match in IMPORT_RE.finditer(text)
+        }
+        if (
+            CONTEXT_EXTENSION_RE.search(text)
+            and FOUNDATION_CONTEXT_PATH not in imports
+        ):
+            violations.add(
+                f"{_relative(source)}: components using BuildContext UI "
+                "extensions must import foundation/context.dart directly"
+            )
+        if (
+            WIDGET_UTILS_RE.search(text)
+            and FOUNDATION_WIDGET_UTILS_PATH not in imports
+        ):
+            violations.add(
+                f"{_relative(source)}: components using Widget/TextStyle/Color "
+                "helpers must import foundation/widget_utils.dart directly"
+            )
+
+    return violations
+
+
+def _scan_comic_source_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(
+        _feature_path("comic_source"),
+        "comic_source",
+    )
+
+
+def _scan_comic_details_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(
+        _feature_path("comic_details"),
+        "comic_details",
+    )
+
+
+def _scan_discovery_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("discovery"), "discovery")
+
+
+def _scan_history_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("history"), "history")
+
+
+def _scan_local_comics_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(
+        _feature_path("local_comics"),
+        "local_comics",
+    )
+
+
+def _scan_reader_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("reader"), "reader")
+
+
+def _scan_search_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("search"), "search")
+
+
+def _scan_settings_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("settings"), "settings")
+
+
+def _scan_sync_app_import_violations() -> set[str]:
+    return _scan_app_import_violations(_feature_path("sync"), "sync")
+
+
 def _scan_foundation_barrel_violations() -> set[str]:
     violations = set()
 
@@ -1013,6 +1242,18 @@ def main() -> None:
         return
 
     component_barrel_violations = _scan_component_barrel_violations()
+    component_app_import_violations = _scan_component_app_import_violations()
+    foundation_app_reexport_violations = _scan_foundation_app_reexport_violations()
+    component_ui_import_violations = _scan_component_ui_import_violations()
+    comic_source_app_import_violations = _scan_comic_source_app_import_violations()
+    comic_details_app_import_violations = _scan_comic_details_app_import_violations()
+    discovery_app_import_violations = _scan_discovery_app_import_violations()
+    history_app_import_violations = _scan_history_app_import_violations()
+    local_comics_app_import_violations = _scan_local_comics_app_import_violations()
+    reader_app_import_violations = _scan_reader_app_import_violations()
+    search_app_import_violations = _scan_search_app_import_violations()
+    settings_app_import_violations = _scan_settings_app_import_violations()
+    sync_app_import_violations = _scan_sync_app_import_violations()
     foundation_barrel_violations = _scan_foundation_barrel_violations()
     feature_entrypoint_violations = _scan_feature_entrypoint_violations()
     app_shell_entrypoint_violations = _scan_app_shell_entrypoint_violations()
@@ -1027,6 +1268,18 @@ def main() -> None:
     if (
         restricted_imports
         or component_barrel_violations
+        or component_app_import_violations
+        or foundation_app_reexport_violations
+        or component_ui_import_violations
+        or comic_source_app_import_violations
+        or comic_details_app_import_violations
+        or discovery_app_import_violations
+        or history_app_import_violations
+        or local_comics_app_import_violations
+        or reader_app_import_violations
+        or search_app_import_violations
+        or settings_app_import_violations
+        or sync_app_import_violations
         or foundation_barrel_violations
         or feature_entrypoint_violations
         or app_shell_entrypoint_violations
@@ -1061,6 +1314,54 @@ def main() -> None:
         if component_barrel_violations:
             print("Component barrel violations:")
             for item in sorted(component_barrel_violations):
+                print(f"  {item}")
+        if component_app_import_violations:
+            print("Component App import violations:")
+            for item in sorted(component_app_import_violations):
+                print(f"  {item}")
+        if foundation_app_reexport_violations:
+            print("Foundation App re-export violations:")
+            for item in sorted(foundation_app_reexport_violations):
+                print(f"  {item}")
+        if component_ui_import_violations:
+            print("Component UI import violations:")
+            for item in sorted(component_ui_import_violations):
+                print(f"  {item}")
+        if comic_source_app_import_violations:
+            print("Comic source App import violations:")
+            for item in sorted(comic_source_app_import_violations):
+                print(f"  {item}")
+        if comic_details_app_import_violations:
+            print("Comic details App import violations:")
+            for item in sorted(comic_details_app_import_violations):
+                print(f"  {item}")
+        if discovery_app_import_violations:
+            print("Discovery App import violations:")
+            for item in sorted(discovery_app_import_violations):
+                print(f"  {item}")
+        if history_app_import_violations:
+            print("History App import violations:")
+            for item in sorted(history_app_import_violations):
+                print(f"  {item}")
+        if local_comics_app_import_violations:
+            print("Local comics App import violations:")
+            for item in sorted(local_comics_app_import_violations):
+                print(f"  {item}")
+        if reader_app_import_violations:
+            print("Reader App import violations:")
+            for item in sorted(reader_app_import_violations):
+                print(f"  {item}")
+        if search_app_import_violations:
+            print("Search App import violations:")
+            for item in sorted(search_app_import_violations):
+                print(f"  {item}")
+        if settings_app_import_violations:
+            print("Settings App import violations:")
+            for item in sorted(settings_app_import_violations):
+                print(f"  {item}")
+        if sync_app_import_violations:
+            print("Sync App import violations:")
+            for item in sorted(sync_app_import_violations):
                 print(f"  {item}")
         if foundation_barrel_violations:
             print("Foundation barrel violations:")

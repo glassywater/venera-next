@@ -8,7 +8,9 @@ import 'package:venera_next/features/favorites/favorites.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
 import 'package:venera_next/foundation/comic_type.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 import 'package:venera_next/network/cache.dart';
 
 class ComicFavoritePanel extends StatefulWidget {

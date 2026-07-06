@@ -1,15 +1,28 @@
-part of 'reader.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:venera_next/components/menu.dart';
+import 'package:venera_next/features/reader/clipboard_image.dart';
+import 'package:venera_next/features/reader/reader_page.dart';
+import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/file_interaction.dart';
+import 'package:venera_next/foundation/file_type.dart';
+import 'package:venera_next/foundation/global_state.dart';
+import 'package:venera_next/foundation/translations.dart';
 
-class _ReaderGestureDetector extends StatefulWidget {
-  const _ReaderGestureDetector({required this.child});
+class ReaderGestureDetector extends StatefulWidget {
+  const ReaderGestureDetector({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<_ReaderGestureDetector> createState() => _ReaderGestureDetectorState();
+  State<ReaderGestureDetector> createState() => ReaderGestureDetectorState();
 }
 
-class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDetector> {
+class ReaderGestureDetectorState
+    extends AutomaticGlobalState<ReaderGestureDetector> {
   late TapGestureRecognizer _tapGestureRecognizer;
 
   static const _kDoubleTapMaxTime = Duration(milliseconds: 200);
@@ -20,11 +33,11 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
 
   static const _kTapToTurnPagePercent = 0.3;
 
-  final _dragListeners = <_DragListener>[];
+  final _dragListeners = <ReaderDragListener>[];
 
   int fingers = 0;
 
-  late _ReaderState reader;
+  late ReaderState reader;
 
   bool ignoreNextTag = false;
 
@@ -44,7 +57,7 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
         onSecondaryTapUp(details.globalPosition);
       };
     super.initState();
-    context.readerScaffold._gestureDetectorState = this;
+    context.readerScaffold.gestureDetectorState = this;
     reader = context.reader;
   }
 
@@ -139,11 +152,13 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
     }
     if (context.reader.mode.key.startsWith('gallery')) {
       if (forward) {
-        if (!context.reader.toNextPage() && !context.reader.isLastChapterOfGroup) {
+        if (!context.reader.toNextPage() &&
+            !context.reader.isLastChapterOfGroup) {
           context.reader.toNextChapter();
         }
       } else {
-        if (!context.reader.toPrevPage() && !context.reader.isFirstChapterOfGroup) {
+        if (!context.reader.toPrevPage() &&
+            !context.reader.isFirstChapterOfGroup) {
           context.reader.toPrevChapter(toLastPage: true);
         }
       }
@@ -160,8 +175,11 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
 
   bool _dragInProgress = false;
 
-  bool get _enableDoubleTapToZoom =>
-      appdata.settings.getReaderSetting(reader.cid, reader.type.sourceKey, 'enableDoubleTapToZoom');
+  bool get _enableDoubleTapToZoom => appdata.settings.getReaderSetting(
+    reader.cid,
+    reader.type.sourceKey,
+    'enableDoubleTapToZoom',
+  );
 
   void onTapUp(TapUpDetails event) {
     if (event.globalPosition == Offset.zero &&
@@ -199,7 +217,7 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
   }
 
   void onTap(Offset location) {
-    if (reader._imageViewController!.handleOnTap(location)) {
+    if (reader.imageViewController!.handleOnTap(location)) {
       return;
     } else if (context.readerScaffold.isOpen) {
       context.readerScaffold.openOrClose();
@@ -209,7 +227,10 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
         return;
       }
       if (appdata.settings.getReaderSetting(
-          reader.cid, reader.type.sourceKey, 'enableTapToTurnPages')) {
+        reader.cid,
+        reader.type.sourceKey,
+        'enableTapToTurnPages',
+      )) {
         bool isLeft = false, isRight = false, isTop = false, isBottom = false;
         final width = context.width;
         final height = context.height;
@@ -229,7 +250,10 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
         var prev = () => context.reader.toPrevPage();
         var next = () => context.reader.toNextPage();
         if (appdata.settings.getReaderSetting(
-            reader.cid, reader.type.sourceKey, 'reverseTapToTurnPages')) {
+          reader.cid,
+          reader.type.sourceKey,
+          'reverseTapToTurnPages',
+        )) {
           prev = () => context.reader.toNextPage();
           next = () => context.reader.toPrevPage();
         }
@@ -272,71 +296,67 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
   }
 
   void onDoubleTap(Offset location) {
-    context.reader._imageViewController?.handleDoubleTap(location);
+    context.reader.imageViewController?.handleDoubleTap(location);
   }
 
   void onSecondaryTapUp(Offset location) {
-    showMenuX(
-      context,
-      location,
-      [
+    showMenuX(context, location, [
+      MenuEntry(
+        icon: Icons.settings,
+        text: "Settings".tl,
+        onClick: () {
+          context.readerScaffold.openSetting();
+        },
+      ),
+      MenuEntry(
+        icon: Icons.menu,
+        text: "Chapters".tl,
+        onClick: () {
+          context.readerScaffold.openChapterDrawer();
+        },
+      ),
+      MenuEntry(
+        icon: Icons.fullscreen,
+        text: "Fullscreen".tl,
+        onClick: () {
+          context.reader.fullscreen();
+        },
+      ),
+      MenuEntry(
+        icon: Icons.exit_to_app,
+        text: "Exit".tl,
+        onClick: () {
+          context.pop();
+        },
+      ),
+      if (App.isDesktop && !reader.isLoading)
         MenuEntry(
-          icon: Icons.settings,
-          text: "Settings".tl,
-          onClick: () {
-            context.readerScaffold.openSetting();
-          },
+          icon: Icons.copy,
+          text: "Copy Image".tl,
+          onClick: () => copyImage(location),
         ),
+      if (!reader.isLoading)
         MenuEntry(
-          icon: Icons.menu,
-          text: "Chapters".tl,
-          onClick: () {
-            context.readerScaffold.openChapterDrawer();
-          },
+          icon: Icons.download_outlined,
+          text: "Save Image".tl,
+          onClick: () => saveImage(location),
         ),
-        MenuEntry(
-          icon: Icons.fullscreen,
-          text: "Fullscreen".tl,
-          onClick: () {
-            context.reader.fullscreen();
-          },
-        ),
-        MenuEntry(
-          icon: Icons.exit_to_app,
-          text: "Exit".tl,
-          onClick: () {
-            context.pop();
-          },
-        ),
-        if (App.isDesktop && !reader.isLoading)
-          MenuEntry(
-            icon: Icons.copy,
-            text: "Copy Image".tl,
-            onClick: () => copyImage(location),
-          ),
-        if (!reader.isLoading)
-          MenuEntry(
-            icon: Icons.download_outlined,
-            text: "Save Image".tl,
-            onClick: () => saveImage(location),
-          ),
-      ],
-    );
+    ]);
   }
 
   void onLongPressedUp(Offset location) {
-    context.reader._imageViewController?.handleLongPressUp(location);
+    context.reader.imageViewController?.handleLongPressUp(location);
   }
 
   void onLongPressedDown(Offset location) {
-    context.reader._imageViewController?.handleLongPressDown(location);
+    context.reader.imageViewController?.handleLongPressDown(location);
   }
 
-  void addDragListener(_DragListener listener) {
+  void addDragListener(ReaderDragListener listener) {
     _dragListeners.add(listener);
   }
 
-  void removeDragListener(_DragListener listener) {
+  void removeDragListener(ReaderDragListener listener) {
     _dragListeners.remove(listener);
   }
 
@@ -344,7 +364,7 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
   Object? get key => "reader_gesture";
 
   void copyImage(Offset location) async {
-    var controller = reader._imageViewController;
+    var controller = reader.imageViewController;
     var image = await controller!.getImageByOffset(location);
     if (image != null) {
       writeImageToClipboard(image);
@@ -354,7 +374,7 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
   }
 
   void saveImage(Offset location) async {
-    var controller = reader._imageViewController;
+    var controller = reader.imageViewController;
     var image = await controller!.getImageByOffset(location);
     if (image != null) {
       var filetype = detectFileType(image);
@@ -365,10 +385,10 @@ class _ReaderGestureDetectorState extends AutomaticGlobalState<_ReaderGestureDet
   }
 }
 
-class _DragListener {
+class ReaderDragListener {
   void Function(Offset point)? onStart;
   void Function(Offset offset)? onMove;
   void Function()? onEnd;
 
-  _DragListener({this.onMove, this.onEnd});
+  ReaderDragListener({this.onMove, this.onEnd});
 }

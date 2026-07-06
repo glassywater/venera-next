@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:venera_next/components/gesture.dart';
-import 'package:venera_next/foundation/app.dart';
+import 'package:venera_next/foundation/context.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class ComicDetailActionButton extends StatelessWidget {
   const ComicDetailActionButton({

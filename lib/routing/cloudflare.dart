@@ -3,6 +3,7 @@ import 'dart:io' as io;
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/log.dart';
 import 'package:venera_next/network/cloudflare.dart';
 import 'package:venera_next/network/cookie_jar.dart';

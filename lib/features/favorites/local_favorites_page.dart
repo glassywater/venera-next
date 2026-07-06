@@ -25,10 +25,12 @@ import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
 import 'package:venera_next/foundation/comic_type.dart';
 import 'package:venera_next/foundation/consts.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/extensions.dart';
 import 'package:venera_next/foundation/file_interaction.dart';
 import 'package:venera_next/foundation/opencc.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 /// If the number of comics in a folder exceeds this limit, it will be
 /// fetched asynchronously.

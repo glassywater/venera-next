@@ -16,6 +16,7 @@ import 'components/message.dart';
 import 'components/window_frame.dart';
 import 'foundation/app.dart';
 import 'foundation/appdata.dart';
+import 'foundation/context.dart';
 import 'foundation/js_engine.dart';
 
 void main(List<String> args) {

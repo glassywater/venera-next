@@ -1,4 +1,11 @@
-part of 'reader.dart';
+import 'package:flutter/material.dart';
+import 'package:venera_next/components/loading.dart';
+import 'package:venera_next/features/comic_source/comic_source.dart';
+import 'package:venera_next/features/history/history.dart';
+import 'package:venera_next/features/local_comics/local_comics.dart';
+import 'package:venera_next/features/reader/reader_page.dart';
+import 'package:venera_next/foundation/comic_type.dart';
+import 'package:venera_next/foundation/res.dart';
 
 class ReaderWithLoading extends StatefulWidget {
   const ReaderWithLoading({
@@ -60,12 +67,8 @@ class _ReaderWithLoadingState
           cid: widget.id,
           name: localComic.title,
           chapters: localComic.chapters,
-          history: history ??
-              History.fromModel(
-                model: localComic,
-                ep: 0,
-                page: 0,
-              ),
+          history:
+              history ?? History.fromModel(model: localComic, ep: 0, page: 0),
           author: localComic.subtitle,
           tags: localComic.tags,
         ),
@@ -81,12 +84,8 @@ class _ReaderWithLoadingState
           cid: widget.id,
           name: comic.data.title,
           chapters: comic.data.chapters,
-          history: history ??
-              History.fromModel(
-                model: comic.data,
-                ep: 0,
-                page: 0,
-              ),
+          history:
+              history ?? History.fromModel(model: comic.data, ep: 0, page: 0),
           author: comic.data.findAuthor() ?? "",
           tags: comic.data.plainTags,
         ),

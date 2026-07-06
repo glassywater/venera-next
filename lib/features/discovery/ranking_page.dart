@@ -2,9 +2,10 @@ import "package:flutter/material.dart";
 import "package:venera_next/components/appbar.dart";
 import "package:venera_next/components/select.dart";
 import "package:venera_next/features/comic_widgets/comic_widgets.dart";
-import "package:venera_next/foundation/app.dart";
 import "package:venera_next/features/comic_source/comic_source.dart";
+import "package:venera_next/foundation/context.dart";
 import "package:venera_next/foundation/translations.dart";
+import "package:venera_next/foundation/widget_utils.dart";
 
 class RankingPage extends StatefulWidget {
   const RankingPage({required this.categoryKey, super.key});

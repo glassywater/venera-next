@@ -5,8 +5,10 @@ import 'package:venera_next/components/scroll.dart';
 import 'package:venera_next/features/settings/setting_components.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/appdata.dart';
+import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/js_engine.dart';
 import 'package:venera_next/foundation/translations.dart';
+import 'package:venera_next/foundation/widget_utils.dart';
 
 class NetworkSettings extends StatefulWidget {
   const NetworkSettings({super.key});
