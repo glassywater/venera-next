@@ -325,15 +325,13 @@ flutter pub get --enforce-lockfile
 
 ## 星标历史
 
-<div align="center">
-  <a href="https://www.star-history.com/?repos=CyrilPeng%2Fvenera-next&type=date&legend=top-left">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=CyrilPeng/venera-next&type=Date&legend=top-left&theme=dark">
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=CyrilPeng/venera-next&type=Date&legend=top-left">
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=CyrilPeng/venera-next&type=Date&legend=top-left" width="100%">
-    </picture>
-  </a>
-</div>
+<a href="https://www.star-history.com/?repos=CyrilPeng%2Fvenera-next&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=CyrilPeng/venera-next&type=date&theme=dark&legend=top-left&sealed_token=R7wY4QHT7z9PvaAnbqS8sp6EycsAd_XRJdBaOVjwgnc0oO1MqB1Pr5JyGVIfG_HVSw9snO0CU64y0XKkuq_rloJiB879bLmel7HabKBHGwe2BgxIeblAUQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=CyrilPeng/venera-next&type=date&legend=top-left&sealed_token=R7wY4QHT7z9PvaAnbqS8sp6EycsAd_XRJdBaOVjwgnc0oO1MqB1Pr5JyGVIfG_HVSw9snO0CU64y0XKkuq_rloJiB879bLmel7HabKBHGwe2BgxIeblAUQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=CyrilPeng/venera-next&type=date&legend=top-left&sealed_token=R7wY4QHT7z9PvaAnbqS8sp6EycsAd_XRJdBaOVjwgnc0oO1MqB1Pr5JyGVIfG_HVSw9snO0CU64y0XKkuq_rloJiB879bLmel7HabKBHGwe2BgxIeblAUQ" />
+ </picture>
+</a>
 
 ---
 
