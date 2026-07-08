@@ -18,7 +18,7 @@ BUNDLE_DIR = BUILD_LINUX_DIR / "x64" / "release" / "bundle"
 APPIMAGE_DIR = BUILD_LINUX_DIR / "appimage"
 
 APPIMAGE_TOOL_VERSION = "continuous"
-LINUXDEPLOY_PLUGIN_GTK_VERSION = "continuous"
+LINUXDEPLOY_VERSION = "continuous"
 
 APPIMAGE_TOOL_URL = (
     "https://github.com/AppImage/AppImageKit/releases/download"
@@ -26,11 +26,7 @@ APPIMAGE_TOOL_URL = (
 )
 LINUXDEPLOY_URL = (
     "https://github.com/linuxdeploy/linuxdeploy/releases/download"
-    f"/{LINUXDEPLOY_PLUGIN_GTK_VERSION}/linuxdeploy-x86_64.AppImage"
-)
-LINUXDEPLOY_PLUGIN_GTK_URL = (
-    "https://github.com/linuxdeploy/linuxdeploy-plugin-gtk/releases/download"
-    f"/{LINUXDEPLOY_PLUGIN_GTK_VERSION}/linuxdeploy-plugin-gtk-x86_64.AppImage"
+    f"/{LINUXDEPLOY_VERSION}/linuxdeploy-x86_64.AppImage"
 )
 
 
@@ -199,22 +195,15 @@ def main() -> None:
 
     appimagetool = tools_dir / "appimagetool"
     linuxdeploy = tools_dir / "linuxdeploy"
-    linuxdeploy_plugin_gtk = tools_dir / "linuxdeploy-plugin-gtk"
 
     if not appimagetool.exists():
         _download_file(APPIMAGE_TOOL_URL, appimagetool)
     if not linuxdeploy.exists():
         _download_file(LINUXDEPLOY_URL, linuxdeploy)
-    if not linuxdeploy_plugin_gtk.exists():
-        _download_file(LINUXDEPLOY_PLUGIN_GTK_URL, linuxdeploy_plugin_gtk)
 
     # Make tools executable
-    for tool in [appimagetool, linuxdeploy, linuxdeploy_plugin_gtk]:
+    for tool in [appimagetool, linuxdeploy]:
         tool.chmod(tool.stat().st_mode | stat.S_IEXEC)
-
-    # Set environment for linuxdeploy
-    env = os.environ.copy()
-    env["LINUXDEPLOY_PLUGIN_GTK"] = str(linuxdeploy_plugin_gtk)
 
     # Run linuxdeploy to fix dependencies
     print("Running linuxdeploy to fix dependencies...")
@@ -222,7 +211,6 @@ def main() -> None:
         [
             str(linuxdeploy),
             "--appdir", str(appdir),
-            "--plugin", "gtk",
             "--output", "appimage",
         ],
         cwd=APPIMAGE_DIR,
