@@ -7,3 +7,4 @@ Type=Application
 Categories=Utility
 Keywords=Flutter;comic;images;
 Icon=venera-next
+Exec=venera-next
