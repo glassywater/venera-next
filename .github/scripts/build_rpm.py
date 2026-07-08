@@ -238,6 +238,7 @@ def main() -> None:
     _run(
         [
             "rpmbuild",
+            "--nodeps",
             "--define", f"_topdir {rpm_build_dir}",
             "-ba", str(spec_file),
         ],
