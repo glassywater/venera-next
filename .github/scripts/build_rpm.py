@@ -61,13 +61,6 @@ License:        GPL-3.0
 URL:            {homepage}
 Source0:        venera-next-%{{version}}.tar.gz
 
-BuildRequires:  gcc
-BuildRequires:  gcc-c++
-BuildRequires:  cmake
-BuildRequires:  ninja-build
-BuildRequires:  gtk3-devel
-BuildRequires:  webkit2gtk4.1-devel
-
 Requires:       gtk3
 Requires:       webkit2gtk4.1
 
@@ -82,19 +75,19 @@ VeneraNext is a comic reader application built with Flutter.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/usr/bin/venera-next
-mkdir -p $RPM_BUILD_ROOT/usr/bin/venera-next/lib
-mkdir -p $RPM_BUILD_ROOT/usr/bin/venera-next/data
+mkdir -p $RPM_BUILD_ROOT/usr/lib/venera-next/lib
+mkdir -p $RPM_BUILD_ROOT/usr/lib/venera-next/data
+mkdir -p $RPM_BUILD_ROOT/usr/bin
 mkdir -p $RPM_BUILD_ROOT/usr/share/applications
 mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/256x256/apps
 
 # Copy application files
-cp -a venera-next $RPM_BUILD_ROOT/usr/bin/venera-next/
-cp -a lib/* $RPM_BUILD_ROOT/usr/bin/venera-next/lib/
-cp -a data/* $RPM_BUILD_ROOT/usr/bin/venera-next/data/
+cp -a venera-next $RPM_BUILD_ROOT/usr/lib/venera-next/
+cp -a lib/* $RPM_BUILD_ROOT/usr/lib/venera-next/lib/
+cp -a data/* $RPM_BUILD_ROOT/usr/lib/venera-next/data/
 
-# Create symlink
-ln -s /usr/bin/venera-next/venera-next $RPM_BUILD_ROOT/usr/bin/venera-next
+# Create symlink in /usr/bin
+ln -s /usr/lib/venera-next/venera-next $RPM_BUILD_ROOT/usr/bin/venera-next
 
 # Copy desktop file
 cp venera-next.desktop $RPM_BUILD_ROOT/usr/share/applications/
@@ -104,8 +97,9 @@ cp venera-next.png $RPM_BUILD_ROOT/usr/share/icons/hicolor/256x256/apps/
 
 %files
 %license LICENSE
+/usr/lib/venera-next
+/usr/lib/venera-next/*
 /usr/bin/venera-next
-/usr/bin/venera-next/*
 /usr/share/applications/venera-next.desktop
 /usr/share/icons/hicolor/256x256/apps/venera-next.png
 
@@ -123,7 +117,7 @@ Comment=A comic app.
 Terminal=false
 Type=Application
 Categories=Utility;
-Exec=/usr/bin/venera-next/venera-next
+Exec=venera-next
 Icon=venera-next
 Keywords=Flutter;comic;images;
 """
