@@ -164,20 +164,16 @@ def main() -> None:
     desktop_file = appdir / "venera-next.desktop"
     desktop_file.write_text(_create_desktop_file(), encoding="utf-8")
 
-    # Copy icon
+    # Copy icon to both AppDir root and icons dir
     icon_src = ROOT / "debian" / "gui" / "venera-next.png"
+    if not icon_src.exists():
+        icon_src = ROOT / "assets" / "app_icon.png"
+    if not icon_src.exists():
+        icon_src = ROOT / "assets" / "Venera-Next.svg"
+
     if icon_src.exists():
+        shutil.copy2(icon_src, appdir / "venera-next.png")
         shutil.copy2(icon_src, icons_dir / "venera-next.png")
-    else:
-        # Try alternative icon locations
-        alt_icons = [
-            ROOT / "assets" / "app_icon.png",
-            ROOT / "assets" / "Venera-Next.svg",
-        ]
-        for alt_icon in alt_icons:
-            if alt_icon.exists():
-                shutil.copy2(alt_icon, icons_dir / "venera-next.png")
-                break
 
     # Create symlink for AppRun
     apprun = appdir / "AppRun"
