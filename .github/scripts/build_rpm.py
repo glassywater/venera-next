@@ -177,7 +177,7 @@ def main() -> None:
 
     # Create source tarball
     print("Creating source tarball...")
-    tarball_name = f"venera-next-{version}"
+    tarball_name = f"venera-next-{rpm_version}"
     tarball_path = sources_dir / f"{tarball_name}.tar.gz"
 
     with tarfile.open(tarball_path, "w:gz") as tar:
