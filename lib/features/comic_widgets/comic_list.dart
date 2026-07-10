@@ -297,11 +297,27 @@ class ComicListState extends State<ComicList> {
     }
     _maxPage = state['maxPage'];
     _data.clear();
-    _data.addAll(state['data']);
+    final data = state['data'];
+    if (data is Map) {
+      for (final entry in data.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (key is int && value is Iterable) {
+          _data[key] = List<Comic>.from(value);
+        }
+      }
+    }
     _page = state['page'];
     _error = state['error'];
     _loading.clear();
-    _loading.addAll(state['loading']);
+    final loading = state['loading'];
+    if (loading is Map) {
+      for (final entry in loading.entries) {
+        if (entry.key is int && entry.value is bool) {
+          _loading[entry.key] = entry.value;
+        }
+      }
+    }
     _nextUrl = state['nextUrl'];
   }
 
@@ -454,12 +470,12 @@ class ComicListState extends State<ComicList> {
         if (res.success) {
           if (res.data.isEmpty) {
             setState(() {
-              _data[page] = const [];
+              _data[page] = <Comic>[];
               _maxPage ??= page;
             });
           } else {
             setState(() {
-              _data[page] = res.data;
+              _data[page] = List<Comic>.from(res.data);
               if (res.subData != null && res.subData is int) {
                 _maxPage = res.subData;
               }
@@ -494,7 +510,7 @@ class ComicListState extends State<ComicList> {
 
   Future<void> _fetchNext() async {
     var res = await widget.loadNext!(_nextUrl);
-    _data[_data.length + 1] = res.data;
+    _data[_data.length + 1] = List<Comic>.from(res.data);
     if (res.subData == null) {
       _maxPage = _data.length;
     } else {

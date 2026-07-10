@@ -66,11 +66,17 @@ class WebDavLibraryConfig {
   }
 
   String childDirectoryPath(String name) {
-    return '${_ensureTrailingSlash(remotePath)}${_stripSlashes(name)}/';
+    return childDirectoryPathFrom(remotePath, name);
   }
 
   String childFilePath(String parent, String name) {
-    return '${_ensureTrailingSlash(parent)}${_stripSlashes(name)}';
+    final path = _normalizeRelativePath(name);
+    return '${_ensureTrailingSlash(parent)}$path';
+  }
+
+  String childDirectoryPathFrom(String parent, String name) {
+    final path = _normalizeRelativePath(name);
+    return '${_ensureTrailingSlash(parent)}$path/';
   }
 
   String fileUrl(String remoteFilePath) {
@@ -95,8 +101,12 @@ class WebDavLibraryConfig {
     return path.endsWith('/') ? path : '$path/';
   }
 
-  static String _stripSlashes(String value) {
-    return value.replaceAll(RegExp(r'^/+|/+$'), '');
+  static String _normalizeRelativePath(String value) {
+    return value
+        .replaceAll('\\', '/')
+        .split('/')
+        .where((segment) => segment.isNotEmpty)
+        .join('/');
   }
 }
 
@@ -233,7 +243,9 @@ class WebDavLibrarySource {
       return const Res.error('Invalid WebDAV comic library configuration');
     }
     try {
-      final entries = await ops.readDir(config, config.remotePath);
+      final entries = List<WebDavLibraryEntry>.from(
+        await ops.readDir(config, config.remotePath),
+      );
       final comics =
           entries
               .where((entry) => entry.isDirectory)
@@ -241,7 +253,7 @@ class WebDavLibrarySource {
               .map(
                 (entry) => Comic(
                   entry.name,
-                  'cover.jpg',
+                  '',
                   entry.name,
                   null,
                   const ['WebDAV'],
@@ -266,11 +278,12 @@ class WebDavLibrarySource {
     }
     try {
       final comicPath = config.childDirectoryPath(id);
-      final entries = await ops.readDir(config, comicPath);
+      final entries = List<WebDavLibraryEntry>.from(
+        await ops.readDir(config, comicPath),
+      );
       final rootImages = _imageEntries(
         entries,
       ).where((entry) => !_isNamedCover(entry.name)).toList();
-      final chapterMap = <String, String>{};
       final cover = _findNamedCover(entries);
       String? coverPath = cover == null
           ? null
@@ -281,19 +294,14 @@ class WebDavLibrarySource {
               .where((entry) => !_isIgnoredEntry(entry.name))
               .toList()
             ..sort((a, b) => _compareNames(a.name, b.name));
-      for (final directory in directories) {
-        final chapterPath = config.childDirectoryPath('$id/${directory.name}');
-        final chapterEntries = await ops.readDir(config, chapterPath);
-        final files = _imageEntries(
-          chapterEntries,
-        ).where((entry) => !_isNamedCover(entry.name)).toList();
-        if (files.isEmpty) continue;
-        chapterMap[directory.name] = directory.name;
-        coverPath ??= config.childFilePath(chapterPath, files.first.name);
+      final chapterMap = {
+        for (final directory in directories) directory.name: directory.name,
+      };
+      if (rootImages.isNotEmpty) {
+        coverPath ??= config.childFilePath(comicPath, rootImages.first.name);
       }
       if (chapterMap.isEmpty && rootImages.isNotEmpty) {
         chapterMap[rootChapterId] = rootChapterTitle;
-        coverPath ??= config.childFilePath(comicPath, rootImages.first.name);
       }
       if (chapterMap.isEmpty) {
         return const Res.error('No images found in the WebDAV comic directory');
@@ -302,7 +310,7 @@ class WebDavLibrarySource {
         ComicDetails.fromJson({
           'title': id,
           'subtitle': '',
-          'cover': coverPath ?? 'cover.jpg',
+          'cover': coverPath ?? '',
           'description': '',
           'tags': {
             'Source': ['WebDAV'],
@@ -341,7 +349,9 @@ class WebDavLibrarySource {
       final path = ep == null || ep == rootChapterId
           ? config.childDirectoryPath(id)
           : config.childDirectoryPath('$id/$ep');
-      final entries = await ops.readDir(config, path);
+      final entries = List<WebDavLibraryEntry>.from(
+        await ops.readDir(config, path),
+      );
       final files = _imageEntries(entries)
           .where((entry) => !_isNamedCover(entry.name))
           .map((entry) => config.childFilePath(path, entry.name))

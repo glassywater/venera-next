@@ -93,6 +93,9 @@ void _addComicToFavorites(List<Comic> comics) {
 }
 
 ImageProvider? _findImageProvider(Comic comic) {
+  if (comic.cover.trim().isEmpty) {
+    return null;
+  }
   ImageProvider image;
   if (comic is LocalComic) {
     image = LocalComicImageProvider(comic);

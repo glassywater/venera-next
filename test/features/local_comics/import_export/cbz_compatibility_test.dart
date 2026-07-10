@@ -1,3 +1,5 @@
+import 'package:archive/archive_io.dart' as archive_io;
+import 'package:enough_convert/enough_convert.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:venera_next/features/local_comics/import_export/import_export.dart';
 import 'package:venera_next/foundation/file_system.dart';
@@ -178,5 +180,108 @@ void main() {
         }
       },
     );
+
+    test(
+      'extractArchiveForTesting retries Dart zip extraction when native extractors fail',
+      () async {
+        final temp = Directory.systemTemp.createTempSync('cbz_extract_');
+        try {
+          final archive = File(FilePath.join(temp.path, 'legacy.cbz'))
+            ..writeAsBytesSync([0x50, 0x4B, 0x03, 0x04]);
+          final out = Directory(FilePath.join(temp.path, 'out'))..createSync();
+          final calls = <String>[];
+
+          await CBZ.extractArchiveForTesting(
+            archive,
+            out,
+            zipExtractor: (archivePath, outputPath, threads) async {
+              calls.add('zip');
+              throw const FormatException('Missing extension byte', null, 24);
+            },
+            sevenZipExtractor: (archivePath, outputPath, threads) async {
+              calls.add('7z');
+              throw Exception('Failed to open archive.');
+            },
+            dartZipExtractor: (archivePath, outputPath) async {
+              calls.add('dart');
+              File(FilePath.join(outputPath, '001.jpg')).writeAsBytesSync([1]);
+            },
+          );
+
+          expect(calls, ['zip', '7z', 'dart']);
+          expect(File(FilePath.join(out.path, '001.jpg')).existsSync(), isTrue);
+        } finally {
+          temp.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test('extractArchiveForTesting extracts zip with Dart fallback', () async {
+      final temp = Directory.systemTemp.createTempSync('cbz_extract_');
+      try {
+        final archive = archive_io.Archive()
+          ..addFile(archive_io.ArchiveFile.directory('猫之眼[北条司]/'))
+          ..addFile(archive_io.ArchiveFile.bytes('猫之眼[北条司]/第01卷/001.jpg', [1]));
+        final archiveFile = File(FilePath.join(temp.path, 'book.cbz'))
+          ..writeAsBytesSync(archive_io.ZipEncoder().encodeBytes(archive));
+        final out = Directory(FilePath.join(temp.path, 'out'))..createSync();
+
+        await CBZ.extractArchiveForTesting(
+          archiveFile,
+          out,
+          zipExtractor: (archivePath, outputPath, threads) async {
+            throw const FormatException('Missing extension byte', null, 24);
+          },
+          sevenZipExtractor: (archivePath, outputPath, threads) async {
+            throw Exception('Failed to open archive.');
+          },
+        );
+
+        expect(
+          File(
+            FilePath.join(out.path, '猫之眼[北条司]', '第01卷', '001.jpg'),
+          ).existsSync(),
+          isTrue,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
+
+    test('extractArchiveForTesting decodes GBK zip entry names', () async {
+      final temp = Directory.systemTemp.createTempSync('cbz_extract_');
+      try {
+        final archive = archive_io.Archive()
+          ..addFile(archive_io.ArchiveFile.directory('猫之眼[北条司]/'))
+          ..addFile(archive_io.ArchiveFile.bytes('猫之眼[北条司]/第01卷/001.jpg', [1]));
+        final archiveFile = File(FilePath.join(temp.path, 'book.cbz'))
+          ..writeAsBytesSync(
+            archive_io.ZipEncoder(
+              filenameEncoding: const GbkCodec(),
+            ).encodeBytes(archive),
+          );
+        final out = Directory(FilePath.join(temp.path, 'out'))..createSync();
+
+        await CBZ.extractArchiveForTesting(
+          archiveFile,
+          out,
+          zipExtractor: (archivePath, outputPath, threads) async {
+            throw const FormatException('Missing extension byte', null, 24);
+          },
+          sevenZipExtractor: (archivePath, outputPath, threads) async {
+            throw Exception('Failed to open archive.');
+          },
+        );
+
+        expect(
+          File(
+            FilePath.join(out.path, '猫之眼[北条司]', '第01卷', '001.jpg'),
+          ).existsSync(),
+          isTrue,
+        );
+      } finally {
+        temp.deleteSync(recursive: true);
+      }
+    });
   });
 }

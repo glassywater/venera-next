@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:archive/archive_io.dart' as archive_io;
+import 'package:enough_convert/enough_convert.dart';
 import 'package:flutter_7zip/flutter_7zip.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/features/comic_source/comic_source.dart';
@@ -92,9 +94,12 @@ abstract class CBZ {
     zipExtractor,
     Future<void> Function(String archivePath, String outputPath, int threads)?
     sevenZipExtractor,
+    Future<void> Function(String archivePath, String outputPath)?
+    dartZipExtractor,
   }) async {
     final zipExtract = zipExtractor ?? ZipFile.openAndExtractAsync;
     final sevenZipExtract = sevenZipExtractor ?? SZArchive.extractIsolates;
+    final dartZipExtract = dartZipExtractor ?? _extractZipWithDart;
     var fileType = await checkType(file);
     if (fileType.mime == 'application/zip') {
       try {
@@ -105,13 +110,121 @@ abstract class CBZ {
           "Failed to extract ZIP archive with zip_flutter, retry with 7z: $e",
         );
         await out.deleteContents();
-        await sevenZipExtract(file.path, out.path, 4);
+        try {
+          await sevenZipExtract(file.path, out.path, 4);
+        } catch (sevenZipError) {
+          Log.warning(
+            "CBZ",
+            "Failed to extract ZIP archive with 7z, retry with Dart archive: $sevenZipError",
+          );
+          await out.deleteContents();
+          await dartZipExtract(file.path, out.path);
+        }
       }
     } else if (fileType.mime == "application/x-7z-compressed") {
       await sevenZipExtract(file.path, out.path, 4);
     } else {
       throw Exception('Unsupported archive type');
     }
+  }
+
+  static Future<void> _extractZipWithDart(
+    String archivePath,
+    String outputPath,
+  ) async {
+    final input = archive_io.InputFileStream(archivePath);
+    try {
+      final archive = archive_io.ZipDecoder().decodeStream(input);
+      for (final entry in archive) {
+        final entryName = _normalizeZipEntryName(entry.name);
+        if (entryName == null) continue;
+        final destination = FilePath.join(outputPath, entryName);
+        if (!_isWithinDirectory(outputPath, destination)) {
+          continue;
+        }
+        if (entry.isDirectory) {
+          Directory(destination).createSync(recursive: true);
+        } else {
+          File(destination).parent.createSync(recursive: true);
+          final output = archive_io.OutputFileStream(destination);
+          try {
+            entry.writeContent(output);
+          } finally {
+            output.closeSync();
+          }
+        }
+      }
+    } finally {
+      await input.close();
+    }
+  }
+
+  static String? _normalizeZipEntryName(String name) {
+    final decodedName = _decodeLegacyZipName(name);
+    final normalized = decodedName.replaceAll('\\', '/');
+    final segments = normalized
+        .split('/')
+        .where((segment) => segment.isNotEmpty && segment != '.')
+        .toList();
+    if (segments.any((segment) => segment == '..')) {
+      return null;
+    }
+    if (segments.isEmpty) {
+      return null;
+    }
+    return segments.join(Platform.pathSeparator);
+  }
+
+  static String _decodeLegacyZipName(String name) {
+    final bytes = name.codeUnits;
+    if (bytes.any((byte) => byte > 0xff)) {
+      return name;
+    }
+    try {
+      final decoded = const GbkCodec().decode(bytes);
+      if (_containsCjk(decoded) &&
+          (!_containsCjk(name) || _looksLikeMojibake(name))) {
+        return decoded;
+      }
+      return name;
+    } catch (_) {
+      return name;
+    }
+  }
+
+  static bool _containsCjk(String name) {
+    return name.runes.any(
+      (rune) =>
+          rune >= 0x3400 && rune <= 0x9fff || rune >= 0xf900 && rune <= 0xfaff,
+    );
+  }
+
+  static bool _looksLikeMojibake(String name) {
+    return name.contains('�') ||
+        name.contains('├') ||
+        name.contains('┬') ||
+        name.contains('╬') ||
+        name.contains('▒') ||
+        name.contains('╫') ||
+        name.contains('╓') ||
+        name.contains('╘') ||
+        name.contains('─') ||
+        name.contains('│') ||
+        name.contains('µ') ||
+        name.contains('Ú') ||
+        name.contains('¾') ||
+        name.contains('Ï') ||
+        name.contains('Ã') ||
+        name.contains('Â');
+  }
+
+  static bool _isWithinDirectory(String directory, String filePath) {
+    final normalizedDirectory = Directory(directory).absolute.path;
+    final normalizedFile = File(filePath).absolute.path;
+    return normalizedFile == normalizedDirectory ||
+        normalizedFile.startsWith(
+          '$normalizedDirectory${Platform.pathSeparator}',
+        );
   }
 
   static Future<LocalComic> import(File file) async {

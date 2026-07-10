@@ -2,7 +2,14 @@
 
 本项目遵循语义化版本，记录 fork 后的主要变更。
 
-## 未发布
+## v1.11.0-rc.3
+
+### 修复
+
+- 修复多个 toast 连续出现时位置重叠，导致下方提示被遮挡的问题。
+- 修复部分 CBZ/ZIP 使用非 UTF-8 文件名编码时，本地导入可能抛出 `FormatException: Missing extension byte` 的问题。
+- 修复部分 Windows 压缩得到的 CBZ/ZIP 在原生解压器和 7z 均失败时，导入提示 `Failed to open archive` 的问题。
+- 修复 WebDAV 漫画库读取中文目录或不可变目录列表时，可能显示 `unsupported operation: cannot remove from an unmodifiable list`，以及详情页章节长时间加载的问题。
 
 ### 文档
 
