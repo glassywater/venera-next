@@ -333,15 +333,17 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
                 height: 144,
                 width: 144 * 0.72,
                 clipBehavior: Clip.antiAlias,
-                child: AnimatedImage(
-                  image: CachedImageProvider(
-                    widget.cover ?? comic.cover,
-                    sourceKey: comic.sourceKey,
-                    cid: comic.id,
-                  ),
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
+                child: _cover == null
+                    ? const SizedBox()
+                    : AnimatedImage(
+                        image: CachedImageProvider(
+                          _cover!,
+                          sourceKey: comic.sourceKey,
+                          cid: comic.id,
+                        ),
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
               ),
             ),
           ),
@@ -783,8 +785,12 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
   }
 
   void _viewCover(BuildContext context) {
+    final cover = _cover;
+    if (cover == null) {
+      return;
+    }
     final imageProvider = CachedImageProvider(
-      widget.cover ?? comic.cover,
+      cover,
       sourceKey: comic.sourceKey,
       cid: comic.id,
     );
@@ -800,8 +806,12 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
 
   void _saveCover(BuildContext context) async {
     try {
+      final cover = _cover;
+      if (cover == null) {
+        return;
+      }
       final imageProvider = CachedImageProvider(
-        widget.cover ?? comic.cover,
+        cover,
         sourceKey: comic.sourceKey,
         cid: comic.id,
       );
@@ -828,6 +838,16 @@ class _ComicPageState extends LoadingState<ComicPage, ComicDetails>
         context.showMessage(message: "Error".tl);
       }
     }
+  }
+
+  String? get _cover {
+    final cover = widget.cover?.trim().isNotEmpty == true
+        ? widget.cover
+        : comic.cover;
+    if (cover == null || cover.trim().isEmpty) {
+      return null;
+    }
+    return cover;
   }
 }
 
@@ -955,7 +975,7 @@ class _ComicPageLoadingPlaceHolder extends StatelessWidget {
 
   Widget buildImage(BuildContext context) {
     Widget child;
-    if (cover != null) {
+    if (cover?.trim().isNotEmpty == true) {
       child = AnimatedImage(
         image: CachedImageProvider(cover!, sourceKey: sourceKey, cid: cid),
         width: double.infinity,
