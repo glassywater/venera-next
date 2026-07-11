@@ -63,6 +63,8 @@ Source0:        venera-next-%{{version}}.tar.gz
 
 Requires:       gtk3
 Requires:       webkit2gtk4.1
+Requires:       ca-certificates
+Requires:       openssl-libs
 
 %description
 VeneraNext is a comic reader application built with Flutter.
@@ -87,7 +89,7 @@ cp -a lib/* $RPM_BUILD_ROOT/usr/lib/venera-next/lib/
 cp -a data/* $RPM_BUILD_ROOT/usr/lib/venera-next/data/
 
 # Create symlink in /usr/bin
-ln -s /usr/lib/venera-next/venera-next $RPM_BUILD_ROOT/usr/bin/venera-next
+ln -s ../lib/venera-next/venera-next $RPM_BUILD_ROOT/usr/bin/venera-next
 
 # Copy desktop file
 cp venera-next.desktop $RPM_BUILD_ROOT/usr/share/applications/
@@ -100,8 +102,19 @@ cp venera-next.png $RPM_BUILD_ROOT/usr/share/icons/hicolor/256x256/apps/
 /usr/lib/venera-next
 /usr/lib/venera-next/*
 /usr/bin/venera-next
+/usr/lib/venera-next/venera-next
+/usr/lib/venera-next/lib/
+/usr/lib/venera-next/data/
+/usr/bin/venera-next
 /usr/share/applications/venera-next.desktop
 /usr/share/icons/hicolor/256x256/apps/venera-next.png
+
+%post
+# Fix SELinux context if applicable
+if command -v restorecon > /dev/null 2>&1; then
+    restorecon -v /usr/lib/venera-next/venera-next || true
+    restorecon -v /usr/bin/venera-next || true
+fi
 
 %changelog
 * %(date "+%a %b %d %Y") VeneraNext <https://github.com/CyrilPeng/venera-next> - {version}-{release}
@@ -117,7 +130,7 @@ Comment=A comic app.
 Terminal=false
 Type=Application
 Categories=Utility;
-Exec=venera-next
+Exec=/usr/bin/venera-next
 Icon=venera-next
 Keywords=Flutter;comic;images;
 """
