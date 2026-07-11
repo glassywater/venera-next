@@ -151,19 +151,6 @@ def main() -> None:
     print(f"Copying bundle from {BUNDLE_DIR}")
     shutil.copytree(BUNDLE_DIR, usr_bin_dir, dirs_exist_ok=True)
 
-    # Move native assets from usr/bin/lib/ to usr/lib/
-    # linuxdeploy will change the binary's RPATH from $ORIGIN/lib to $ORIGIN/../lib,
-    # so native assets (librhttp.so, libapp.so, etc.) must be in usr/lib/
-    bundle_lib_dir = usr_bin_dir / "lib"
-    if bundle_lib_dir.exists():
-        print(f"Moving native assets from {bundle_lib_dir} to {usr_lib_dir}")
-        for item in bundle_lib_dir.iterdir():
-            dest = usr_lib_dir / item.name
-            if dest.exists():
-                dest.unlink()
-            shutil.move(str(item), str(dest))
-        bundle_lib_dir.rmdir()
-
     # Rename executable if needed
     executable = usr_bin_dir / "venera-next"
     if not executable.exists():
@@ -214,13 +201,35 @@ def main() -> None:
     for tool in [appimagetool, linuxdeploy]:
         tool.chmod(tool.stat().st_mode | stat.S_IEXEC)
 
-    # Run linuxdeploy to fix dependencies
+    # Run linuxdeploy to fix dependencies (without creating AppImage yet)
     print("Running linuxdeploy to fix dependencies...")
     _run(
         [
             str(linuxdeploy),
             "--appdir", str(appdir),
-            "--output", "appimage",
+        ],
+        cwd=APPIMAGE_DIR,
+    )
+
+    # Move native assets from usr/bin/lib/ to usr/lib/
+    # linuxdeploy changes the binary's RPATH from $ORIGIN/lib to $ORIGIN/../lib,
+    # so native assets (librhttp.so, libapp.so, etc.) must be in usr/lib/
+    bundle_lib_dir = usr_bin_dir / "lib"
+    if bundle_lib_dir.exists():
+        print(f"Moving native assets from {bundle_lib_dir} to {usr_lib_dir}")
+        for item in bundle_lib_dir.iterdir():
+            dest = usr_lib_dir / item.name
+            if dest.exists():
+                dest.unlink()
+            shutil.move(str(item), str(dest))
+        bundle_lib_dir.rmdir()
+
+    # Create AppImage
+    print("Creating AppImage...")
+    _run(
+        [
+            str(appimagetool),
+            str(appdir),
         ],
         cwd=APPIMAGE_DIR,
     )
