@@ -42,6 +42,7 @@ def _rpm_version(pubspec_version: str) -> tuple[str, str]:
     version, separator, build = pubspec_version.partition("+")
     if not separator:
         build = "1"
+    version = re.sub(r"-(rc|alpha|beta|dev|pre)\b", r"~\1", version)
     return version, build
 
 
