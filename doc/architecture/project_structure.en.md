@@ -12,13 +12,14 @@ This document is the English companion for the repository structure rules. The C
 - Do not add new source files under `pages/`; app-level entry points belong in `app_shell/`, and business pages belong in the corresponding feature domain.
 - `foundation/` contains cross-domain application foundations, including app state, initialization protocols, async queues, Dart extensions, constants, logging, localization, file system helpers, image processing, image provider bases, platform channels, and shared data infrastructure.
 - `components/` contains reusable UI components. Components that only serve one business domain should live inside that feature domain.
-- `network/` contains general network, cache, request, and file transfer infrastructure. Business-specific download tasks and API wrappers should remain in their owning feature domain.
+- `network/` contains general network, cache, request, and file transfer infrastructure. `network/webdav.dart` owns shared WebDAV endpoints, authentication, client creation, and remote path rules. Business-specific download tasks and API wrappers should remain in their owning feature domain.
 
 ## Feature Domains
 
 `lib/features` is the main home for business code. Current domains include:
 
 - `comic_source/`: comic source models, parsing, categories, home summaries, favorites mapping, tag translation, and source translation.
+- `comic_storage/`: archive metadata, image file rules, and local filesystem layout detection shared by local directories, CBZ, and WebDAV.
 - `comic_widgets/`: cross-domain comic display widgets such as cards, lists, and rating controls.
 - `comic_details/`: comic detail page and its chapters, comments, favorites, cover, and thumbnail modules.
 - `discovery/`: explore, category, category comic list, and ranking pages.
@@ -44,7 +45,7 @@ test/features/<domain>/
   <domain>_test.dart
 ```
 
-External modules should prefer stable feature entry files instead of importing implementation files directly. For example, external code should use `features/reader/reader.dart` for reader capabilities, `features/comic_source/comic_source.dart` for comic source capabilities, and `features/webdav_library/webdav_library.dart` for the WebDAV online comic library source.
+External modules should prefer stable feature entry files instead of importing implementation files directly. For example, external code should use `features/reader/reader.dart` for reader capabilities, `features/comic_source/comic_source.dart` for comic source capabilities, `features/comic_storage/comic_storage.dart` for archive metadata and file rules, and `features/webdav_library/webdav_library.dart` for the WebDAV online comic library source.
 
 ## App Shell And Runtime
 

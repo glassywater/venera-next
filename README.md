@@ -32,14 +32,14 @@ VeneraNext 的定位是偏日常使用的漫画阅读器：打开漫画后尽量
 - **瀑布流跨章节阅读**：默认阅读模式。阅读到章节末尾附近时会自动预加载下一章，适合长篇连载和整卷连续阅读。
 - **纵向模式拆分双页**：纵向连续和瀑布流模式可将横向双页图拆成上下排列，并支持交换拆分顺序，适合右翻、左翻方向不同的作品。
 - **章节排序偏好**：漫画详情页的正序、倒序切换使用分段控件，状态会作为全局偏好保存，减少每次打开都要重新调整的操作。
-- **本地漫画和远端目录并重**：本地漫画支持目录、CBZ/ZIP/7Z 导入；WebDAV 漫画库支持远端目录图片结构在线阅读。
+- **本地漫画和远端目录并重**：本地漫画支持目录、CBZ/ZIP/7Z 导入；WebDAV 漫画库支持普通图片目录，以及 VeneraNext 导出 CBZ 的解压目录在线阅读。
 - **源与阅读器分离**：本仓库只维护阅读器本体。网络漫画源由用户自行合法配置，仓库不会内置、推荐或维护具体源站。
 
 ### 漫画来源
 
 - **本地漫画**：适合阅读设备上已有的图片目录或压缩包。支持单本目录、批量目录、CBZ、ZIP、7Z、CB7 导入。
 - **网络漫画源**：兼容 JavaScript 扩展 API。添加扩展后，可使用搜索、分类、排行、探索页、收藏和下载等能力。
-- **WebDAV 漫画库**：把 WebDAV 服务端作为在线漫画库读取，适合 NAS、Nextcloud、坚果云等场景；仅支持目录图片结构，不在线预览 CBZ。
+- **WebDAV 漫画库**：把 WebDAV 服务端作为在线漫画库读取，适合 NAS、Nextcloud、坚果云等场景；支持普通图片目录和 CBZ 解压后的增强目录，不在线预览压缩包本身。
 - **下载内容**：网络源章节可以下载到本地漫画库，适合移动端离线阅读或网络不稳定时使用。
 
 ### 管理与同步
@@ -186,7 +186,8 @@ Windows 安装器、便携包和 winget manifest 维护说明见 [doc/distributi
 
 - WebDAV 漫画库是一种在线阅读渠道，适合把 NAS、Nextcloud、ownCloud、坚果云等服务端目录当作漫画库。
 - 配置入口：`设置` -> `应用` -> `WebDAV Comic Library`。
-- 推荐远端结构：
+- 普通目录不要求配置文件。漫画名默认取文件夹名，章节取子目录；没有 `cover.*` 时会依次尝试根目录首图、首个可读章节的封面或首图。
+- 普通目录示例：
 
 ```text
 /venera_comics/
@@ -205,10 +206,22 @@ Windows 安装器、便携包和 winget manifest 维护说明见 [doc/distributi
         └── 002.webp
 ```
 
-- 在线漫画库只支持目录图片结构。远端 CBZ/ZIP/7Z/CB7 会被视为归档文件，不会作为在线漫画预览。
-- 如果远端目录没有 `cover.jpg`，应用会尝试使用第一章第一张图片作为封面。
+- VeneraNext 导出的单本 CBZ 解压后也可以直接放入漫画库。目录中的 `metadata.json` 会提供标题、作者、标签和章节页码范围，根目录图片仍按需加载：
+
+```text
+/venera_comics/猫之眼/
+├── metadata.json
+├── ComicInfo.xml
+├── cover.jpg
+├── 0001.jpg
+├── 0002.jpg
+└── ...
+```
+
+- `metadata.json` 缺失、损坏或章节范围不合法时，应用会忽略元数据并回退普通目录推断，不会隐藏整本漫画。
+- 远端 CBZ/ZIP/7Z/CB7 文件仍会被视为归档文件，不会在线预览；需要在线阅读时，应先在服务端解压为上述目录。
 - 首次打开远端目录时需要列目录，WebDAV 服务端较慢时会有等待；图片阅读时按需加载，并走应用缓存。
-- WebDAV 在线库适合“服务器上已经按图片目录整理好”的作品。如果只有一个很大的 CBZ 文件，更推荐先下载或导入成本地漫画。
+- 完整目录规则和元数据模板见 [本地漫画导入、CBZ 与 WebDAV 漫画库](doc/user/import_comic.zh.md)。
 
 ### WebDAV 数据同步和漫画归档
 
@@ -231,128 +244,6 @@ VeneraNext 有三类 WebDAV 能力，配置入口和用途不同：
 - 下载管理用于离线阅读，网络状况不稳定或移动端使用时尤其有用。下载后的章节会作为本地漫画内容读取。
 - 图片收藏和图库浏览适合单独保存、查看喜欢的图片页。
 - 本地收藏和网络收藏是不同概念：本地收藏由应用维护，网络收藏依赖对应源站账号和扩展能力。
-
----
-
-## 构建项目
-
-### 环境要求
-
-- Flutter `3.41.4`
-- Dart `>=3.8.0 <4.0.0`
-- JDK `17`，用于 Android 构建
-- Rust 工具链，Android 构建需要安装对应 Android targets
-- 对应平台的原生构建环境，例如 Android SDK / NDK、Xcode、Visual Studio、Linux GTK/WebKit 依赖等
-
-### 重要依赖提示
-
-本项目依赖 `rhttp 0.15.1`，需要保持 `flutter_rust_bridge 2.11.1`。
-
-如果 `flutter_rust_bridge` 被升级到不匹配版本，构建出的 App 可能启动后无法联网，并提示：
-
-```
-flutter_rust_bridge has not been initialized
-```
-
-构建前建议确认锁文件中版本正确：
-
-```powershell
-Select-String pubspec.lock -Pattern "flutter_rust_bridge" -Context 0,6
-```
-
-应看到：
-
-```
-version: "2.11.1"
-```
-
-推荐使用锁文件获取依赖：
-
-```powershell
-flutter pub get --enforce-lockfile
-```
-
-不要在不了解影响的情况下删除或重新生成 `pubspec.lock`。
-
-### Android 构建
-
-准备签名文件：
-
-```
-android/keystore.jks
-android/key.properties
-```
-
-`android/key.properties` 示例：
-
-```properties
-storePassword=你的 store 密码
-keyPassword=你的 key 密码
-keyAlias=你的 key alias
-storeFile=../keystore.jks
-```
-
-构建 APK：
-
-```powershell
-flutter pub get --enforce-lockfile
-flutter build apk --release
-```
-
-构建产物通常位于：
-
-```
-build/app/outputs/apk/release/
-```
-
-### 其他平台构建
-
-```bash
-flutter pub get --enforce-lockfile
-flutter build windows
-flutter build linux
-flutter build macos
-```
-
-iOS 可使用无签名构建：
-
-```bash
-flutter pub get --enforce-lockfile
-flutter build ios --release --no-codesign
-```
-
-更多开发、分发和实验文档见 [doc/README.md](doc/README.md)。
-
----
-
-## GitHub Actions
-
-仓库内包含自动构建与发布工作流。
-
-发布版本号统一维护在 `release.json`：
-
-```json
-{
-  "version": "1.2.3",
-  "build": 123
-}
-```
-
-准备发布时先更新 `release.json`，再同步并校验相关文件：
-
-```bash
-python .github/scripts/release_version.py --write
-python .github/scripts/release_version.py --check --tag v1.2.3
-```
-
-`pubspec.yaml`、发布 tag 和 `CHANGELOG.md` 版本章节必须与 `release.json` 一致。`alt_store.json` 不是版本源，它会在正式版 GitHub Release 成功后根据发布资产自动更新；RC 预发布不会更新 AltStore 源。
-
-Android release 构建需要在仓库 Secrets 中配置：
-
-- `ANDROID_KEYSTORE`
-- `ANDROID_KEY_PROPERTIES`
-
-其中 `ANDROID_KEYSTORE` 为 keystore 文件的 Base64 内容，`ANDROID_KEY_PROPERTIES` 为 `key.properties` 文本内容。
 
 ---
 
@@ -386,25 +277,16 @@ winget upgrade CyrilPeng.VeneraNext
 
 在此之前，Windows 仍以 Releases 安装包或便携包为主。
 
-### 6. 自己构建的 App 无法联网怎么办？
+---
 
-优先检查 `flutter_rust_bridge` 是否仍为 `2.11.1`。本项目依赖 `rhttp 0.15.1`，不匹配的 `flutter_rust_bridge` 版本可能导致构建出的 App 启动后无法联网。
+## 开发者入口
 
-### 7. `flutter_rust_bridge has not been initialized` 是什么原因？
+README 面向安装和使用。构建、测试、仓库结构与发布维护说明统一放在开发文档中：
 
-通常是依赖版本漂移。请恢复 `pubspec.lock`，确认 `flutter_rust_bridge` 版本为 `2.11.1`，再重新获取依赖并构建。
-
-### 8. `Unable to satisfy pubspec.yaml using pubspec.lock` 怎么处理？
-
-通常是 Flutter/Dart 环境或包源不匹配。优先确认 Flutter 版本符合要求，并使用锁文件获取依赖：
-
-```powershell
-flutter pub get --enforce-lockfile
-```
-
-### 9. Gradle 下载过慢怎么办？
-
-可以在本地临时切换 Gradle wrapper 镜像，但这类环境相关改动不建议提交到仓库。
+- [构建与开发](doc/development/build.zh.md) / [Build and Development](doc/development/build.en.md)
+- [项目结构约定](doc/architecture/project_structure.zh.md)
+- [Windows 分发维护](doc/distribution/windows.zh.md)
+- [完整文档索引](doc/README.md)
 
 ---
 
