@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:venera_next/foundation/app.dart';
 import 'package:venera_next/foundation/context.dart';
 import 'package:venera_next/foundation/js_engine.dart';
+import 'package:venera_next/foundation/translations.dart';
 import 'package:venera_next/foundation/widget_utils.dart';
 
 import 'message.dart';
@@ -90,7 +91,7 @@ class JsUiApi implements JsUiMessageHandler {
           onPressed: () {
             dialogContext?.pop();
           },
-          child: Text('OK'),
+          child: Text('OK'.tl),
         ),
       );
     }

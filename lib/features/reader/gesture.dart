@@ -369,7 +369,7 @@ class ReaderGestureDetectorState
     if (image != null) {
       writeImageToClipboard(image);
     } else {
-      context.showMessage(message: "No Image");
+      context.showMessage(message: "No Image".tl);
     }
   }
 
@@ -380,7 +380,7 @@ class ReaderGestureDetectorState
       var filetype = detectFileType(image);
       saveFile(filename: "image${filetype.ext}", data: image);
     } else {
-      context.showMessage(message: "No Image");
+      context.showMessage(message: "No Image".tl);
     }
   }
 }

@@ -12,6 +12,7 @@ import 'package:venera_next/foundation/comic_type.dart';
 import 'package:venera_next/features/local_comics/local.dart';
 import 'package:venera_next/foundation/log.dart';
 import 'package:venera_next/foundation/res.dart';
+import 'package:venera_next/foundation/translations.dart';
 import 'package:venera_next/network/file_downloader.dart';
 import 'package:venera_next/network/images.dart';
 import 'package:venera_next/foundation/extensions.dart';
@@ -147,7 +148,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       return;
     }
     _isRunning = false;
-    _message = "Paused";
+    _message = "Paused".tl;
     _currentSpeed = 0;
     _wakeRetryDelay();
     var shouldMove = <int>[];
@@ -171,7 +172,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
   bool _isError = false;
 
-  String _message = "Fetching comic info...";
+  String _message = "Fetching comic info...".tl;
 
   String? _cover;
 
@@ -286,13 +287,13 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
   Future<void> _resume() async {
     _isError = false;
-    _message = "Resuming...";
+    _message = "Resuming...".tl;
     _isRunning = true;
     notifyListeners();
     runRecorder();
 
     if (comic == null) {
-      _message = "Fetching comic info...";
+      _message = "Fetching comic info...".tl;
       notifyListeners();
       var res = await _runDownloadStepWithRetry(() async {
         var r = await source.loadComicInfo!(comicId);
@@ -334,7 +335,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
     await LocalManager().saveCurrentDownloadingTasks();
 
     if (_cover == null) {
-      _message = "Downloading cover...";
+      _message = "Downloading cover...".tl;
       notifyListeners();
       var res = await _runDownloadStepWithRetry(() async {
         Uint8List? data;
@@ -370,7 +371,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
     if (_images == null) {
       if (comic!.chapters == null) {
-        _message = "Fetching image list...";
+        _message = "Fetching image list...".tl;
         notifyListeners();
         var res = await _runDownloadStepWithRetry(() async {
           var r = await source.loadComicPages!(comicId, null);
@@ -405,7 +406,10 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
             _totalCount += _images![i]!.length;
             continue;
           }
-          _message = "Fetching image list ($cpCount/$totalCpCount)...";
+          _message = "Fetching image list (@a/@b)...".tlParams({
+            "a": cpCount,
+            "b": totalCpCount,
+          });
           notifyListeners();
           var res = await _runDownloadStepWithRetry(() async {
             var r = await source.loadComicPages!(comicId, i);
@@ -784,7 +788,7 @@ class ArchiveDownloadTask extends DownloadTask {
 
   FileDownloader? _downloader;
 
-  String _message = "Fetching comic info...";
+  String _message = "Fetching comic info...".tl;
 
   bool _isRunning = false;
 
@@ -836,7 +840,7 @@ class ArchiveDownloadTask extends DownloadTask {
   @override
   void pause() {
     _isRunning = false;
-    _message = "Paused";
+    _message = "Paused".tl;
     _downloader?.stop();
     notifyListeners();
   }
@@ -853,7 +857,7 @@ class ArchiveDownloadTask extends DownloadTask {
     _isError = false;
     _isRunning = true;
     notifyListeners();
-    _message = "Downloading...";
+    _message = "Downloading...".tl;
 
     if (path == null) {
       var dir = await LocalManager().findValidDirectory(

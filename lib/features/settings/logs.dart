@@ -40,19 +40,19 @@ class _LogsPageState extends State<LogsPage> {
                 position: position,
                 items: [
                   PopupMenuItem(
-                    child: Text("all"),
+                    child: Text("All".tl),
                     onTap: () => setState(() => logLevelToShow = "all"),
                   ),
                   PopupMenuItem(
-                    child: Text("info"),
+                    child: Text("Information".tl),
                     onTap: () => setState(() => logLevelToShow = "info"),
                   ),
                   PopupMenuItem(
-                    child: Text("warning"),
+                    child: Text("Warning".tl),
                     onTap: () => setState(() => logLevelToShow = "warning"),
                   ),
                   PopupMenuItem(
-                    child: Text("error"),
+                    child: Text("Error".tl),
                     onTap: () => setState(() => logLevelToShow = "error"),
                   ),
                 ],

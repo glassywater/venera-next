@@ -86,7 +86,7 @@ class _CommentsPageState extends State<CommentsPage> {
       widget.replyComment?.id,
     );
     if (res.error) {
-      context.showMessage(message: res.errorMessage ?? "Unknown Error");
+      context.showMessage(message: res.errorMessage ?? "Unknown error".tl);
     } else {
       var filteredComments = res.data
           .where((c) => !shouldBlockComment(c))
@@ -267,7 +267,7 @@ class _CommentsPageState extends State<CommentsPage> {
                       maxPage = null;
                     });
                   } else {
-                    context.showMessage(message: b.errorMessage ?? "Error");
+                    context.showMessage(message: b.errorMessage ?? "Error".tl);
                     setState(() {
                       sending = false;
                     });
@@ -452,7 +452,7 @@ class _CommentTileState extends State<_CommentTile> {
             isLiked = !isLiked;
             likes += isLiked ? 1 : -1;
           } else {
-            context.showMessage(message: res.errorMessage ?? "Error");
+            context.showMessage(message: res.errorMessage ?? "Error".tl);
           }
           setState(() {
             isLiking = false;
@@ -519,7 +519,7 @@ class _CommentTileState extends State<_CommentTile> {
       widget.comment.voteStatus = voteStatus;
       widget.comment.score = res.data ?? widget.comment.score;
     } else {
-      context.showMessage(message: res.errorMessage ?? "Error");
+      context.showMessage(message: res.errorMessage ?? "Error".tl);
     }
     setState(() {
       isVotingUp = false;

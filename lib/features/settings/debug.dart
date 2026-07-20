@@ -81,7 +81,7 @@ class DebugPageState extends State<DebugPage> {
                     });
                   }
                 },
-                child: const Text("Run"),
+                child: Text("Run".tl),
               ).toAlign(Alignment.centerRight).paddingRight(16),
               const Text(
                 "Result",

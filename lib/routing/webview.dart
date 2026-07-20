@@ -126,14 +126,14 @@ class _AppWebviewState extends State<AppWebview> {
   Widget build(BuildContext context) {
     final actions = [
       Tooltip(
-        message: "More",
+        message: "more".tl,
         child: IconButton(
           icon: const Icon(Icons.more_horiz),
           onPressed: () {
             showMenuX(context, Offset(context.width, context.padding.top), [
               MenuEntry(
                 icon: Icons.open_in_browser,
-                text: "Open in browser".tl,
+                text: "Open in Browser".tl,
                 onClick: () async =>
                     launchUrlString((await controller?.getUrl())!.toString()),
               ),
@@ -159,7 +159,7 @@ class _AppWebviewState extends State<AppWebview> {
       future: future,
       builder: (context, e) {
         if (e.error != null) {
-          return Center(child: Text("Error: ${e.error}"));
+          return Center(child: Text('${"Error".tl}: ${e.error}'));
         }
         if (!e.hasData) {
           return const SizedBox();
@@ -180,7 +180,11 @@ class _AppWebviewState extends State<AppWebview> {
 
     return Scaffold(
       appBar: Appbar(
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          title == "Webview" ? title.tl : title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: actions,
       ),
       body: body,
@@ -300,7 +304,7 @@ class DesktopWebview {
       configuration: CreateConfiguration(
         useWindowPositionAndSize: true,
         userDataFolderWindows: "${App.dataPath}\\webview",
-        title: "webview",
+        title: "Webview".tl,
         proxy: await getProxy(),
       ),
     );

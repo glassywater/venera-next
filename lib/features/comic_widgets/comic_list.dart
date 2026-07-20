@@ -427,7 +427,11 @@ class ComicListState extends State<ComicList> {
                     horizontal: 16,
                     vertical: 6,
                   ),
-                  child: Text("Page $_page / ${_maxPage ?? '?'}"),
+                  child: Text(
+                    "Page @page".tlParams({
+                      "page": "$_page / ${_maxPage ?? '?'}",
+                    }),
+                  ),
                 ),
               ),
             ),

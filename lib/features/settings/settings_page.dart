@@ -128,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 const SizedBox(width: 8),
                 Tooltip(
-                  message: "Back",
+                  message: "Back".tl,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back),
                     onPressed: context.pop,

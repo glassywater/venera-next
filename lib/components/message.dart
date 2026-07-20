@@ -336,7 +336,7 @@ LoadingDialogController showLoadingDialog(
             });
           };
           return ContentDialog(
-            title: controller._message ?? 'Loading',
+            title: controller._message ?? 'Loading'.tl,
             content: LinearProgressIndicator(
               value: controller._progress,
               backgroundColor: context.colorScheme.surfaceContainer,
@@ -499,7 +499,7 @@ Future<void> showInputDialog({
                 onPressed: () async {
                   if (inputValidator != null &&
                       !inputValidator.hasMatch(controller.text)) {
-                    setState(() => error = "Invalid input");
+                    setState(() => error = "Invalid input".tl);
                     return;
                   }
                   var futureOr = onConfirm(controller.text);
