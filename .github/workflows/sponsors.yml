@@ -1,0 +1,39 @@
+name: 生成赞助者名单
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - SPONSORS.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v5
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: 生成 sponsors.json
+        run: python3 .github/scripts/generate_sponsors.py
+
+      - name: 提交 sponsors.json
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add sponsors.json
+          if git diff --staged --quiet; then
+            echo "sponsors.json 无变化，跳过提交。"
+          else
+            git commit -m "chore(sponsors): 更新赞助者名单数据"
+            git push
+          fi
