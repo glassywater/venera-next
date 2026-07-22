@@ -5,8 +5,13 @@ on:
     branches:
       - main
     paths:
-      - SPONSORS.md
+      - .github/data/sponsors.json
+      - .github/scripts/generate_sponsors.py
   workflow_dispatch:
+
+concurrency:
+  group: sponsors
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -19,20 +24,26 @@ jobs:
         uses: actions/checkout@v5
 
       - name: 设置 Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
-      - name: 生成 sponsors.json
+      - name: 测试生成脚本
+        run: python3 -m unittest discover -s .github/scripts/tests -p "test_*.py"
+
+      - name: 生成赞助者公开文件
         run: python3 .github/scripts/generate_sponsors.py
 
-      - name: 提交 sponsors.json
+      - name: 检查生成结果
+        run: python3 .github/scripts/generate_sponsors.py --check
+
+      - name: 提交赞助者公开文件
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
-          git add sponsors.json
+          git add sponsors.json SPONSORS.md README.md
           if git diff --staged --quiet; then
-            echo "sponsors.json 无变化，跳过提交。"
+            echo "赞助者公开文件无变化，跳过提交。"
           else
             git commit -m "chore(sponsors): 更新赞助者名单数据"
             git push
