@@ -305,13 +305,12 @@ jobs:
           name: winget_manifest
           path: outputs/winget/manifests
           if-no-files-found: error
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body_path: release_notes.md
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          files: |
+      - name: 创建草稿 Release 并上传资产
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(
             outputs/*.ipa
             outputs/*.dmg
             outputs/*.apk
@@ -320,8 +319,26 @@ jobs:
             outputs/*.deb
             outputs/*.zst
             outputs/*.AppImage
+          )
+          if (( ${#files[@]} == 0 )); then
+            echo "没有找到可发布的构建产物。" >&2
+            exit 1
+          fi
+
+          args=(
+            --title "${GITHUB_REF_NAME}"
+            --notes-file release_notes.md
+            --draft
+          )
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          gh release create "${GITHUB_REF_NAME}" "${files[@]}" "${args[@]}"
+      - name: 发布草稿 Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "${GITHUB_REF_NAME}" --draft=false
       - name: 清理 jsDelivr CDN 缓存
         run: |
           curl -s "https://purge.jsdelivr.net/gh/CyrilPeng/venera-next@main/pubspec.yaml" | jq '.status'
